@@ -75,7 +75,8 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 
 	// 创建按日期分组的上传目录
 	dateDir := time.Now().Format("20060102")
-	uploadDir := fmt.Sprintf("%s%s/", constant.UPLOAD_BASE_DIR, dateDir)
+	// 物理保存路径（包含public前缀）
+	uploadDir := fmt.Sprintf("public/%s%s/", constant.UPLOAD_BASE_DIR, dateDir)
 
 	// 确保上传目录存在
 	if !gfile.Exists(uploadDir) {
@@ -106,7 +107,7 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 		processedName = nameWithoutExt + extension
 	}
 
-	// 相对路径用于数据库存储
+	// 相对路径用于数据库存储和URL生成（不包含public前缀）
 	relativeURI := fmt.Sprintf("/%s%s/%s", constant.UPLOAD_BASE_DIR, dateDir, uniqueFileName)
 
 	// 保存文件记录到数据库

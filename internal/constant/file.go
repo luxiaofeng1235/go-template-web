@@ -33,9 +33,9 @@ const (
 
 // 上传配置常量
 const (
-	UPLOAD_BASE_DIR = "public/uploads/" // 上传基础目录
-	MAX_IMAGE_SIZE  = 10                // 图片最大大小(MB)
-	MAX_VIDEO_SIZE  = 100               // 视频最大大小(MB)
+	UPLOAD_BASE_DIR = "uploads/" // 上传基础目录（相对于static serverRoot）
+	MAX_IMAGE_SIZE  = 10         // 图片最大大小(MB)
+	MAX_VIDEO_SIZE  = 100        // 视频最大大小(MB)
 )
 
 // 文件类型结构体
