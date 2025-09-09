@@ -22,27 +22,30 @@
 ```go
 // 示例：推荐的中文注释风格
 type User struct {
-    ID       int64     `gorm:"column:id" json:"id"`             // 用户ID
-    Username string    `gorm:"column:username" json:"username"` // 用户名
-    Email    string    `gorm:"column:email" json:"email"`       // 邮箱地址
-    Status   int       `gorm:"column:status" json:"status"`     // 用户状态：1正常 0禁用
-    CreateAt time.Time `gorm:"column:create_at" json:"create_at"` // 创建时间
+    ID        int64 `gorm:"column:id" json:"id"`               // 用户ID
+    Username  string `gorm:"column:username" json:"username"` // 用户名
+    Email     string `gorm:"column:email" json:"email"`       // 邮箱地址
+    Status    int    `gorm:"column:status" json:"status"`     // 用户状态：1正常 0禁用
+    CreatedAt int64  `gorm:"column:created_at" json:"created_at"` // 创建时间
 }
 
-// 用户登录
+// 用户登录 - 使用标准模板
 func (c *UserController) Login(r *ghttp.Request) {
-    // 获取请求参数
-    var req LoginReq
+    // 解析请求参数
+    var req models.LoginReq
     if err := r.Parse(&req); err != nil {
-        r.Response.WriteJson(g.Map{
-            "code": constant.PARAM_ERROR,
-            "msg":  "参数错误", // 中文错误信息
-        })
+        utils.ParamError(r, "参数解析错误")
         return
     }
-    
-    // 业务逻辑处理...
-    global.Requestlog.Info("用户登录请求", "username", req.Username) // 中文日志
+
+    // 调用Service层处理业务逻辑
+    result, err := service.User.Login(r.Context(), &req)
+    if err != nil {
+        utils.Fail(r, err, "登录失败")
+        return
+    }
+
+    utils.Success(r, result, "登录成功")
 }
 ```
 
@@ -52,6 +55,42 @@ func (c *UserController) Login(r *ghttp.Request) {
 - ✅ 负责：参数解析、参数验证、调用Service层、返回响应
 - ❌ 禁止：定义结构体、编写业务逻辑、直接操作数据库
 - 📁 位置：`api/controller/user.go`、`api/controller/product.go`
+
+### 📋 Controller层标准开发模式
+
+**统一的控制器开发模板**：
+```go
+func (c *XxxController) Action(r *ghttp.Request) {
+    // 解析请求参数
+    var req models.XxxReq
+    if err := r.Parse(&req); err != nil {
+        utils.ParamError(r, "参数解析错误")
+        return
+    }
+
+    // 调用Service层处理业务逻辑
+    result, err := service.Xxx.Action(r.Context(), &req)
+    if err != nil {
+        utils.Fail(r, err, "操作失败")
+        return
+    }
+
+    utils.Success(r, result, "操作成功")
+}
+```
+
+**关键要点**：
+- ✅ **参数绑定**: 使用 `r.Parse(&req)` 传递指针进行参数绑定
+- ✅ **错误处理**: 统一使用 `utils.ParamError()` 处理参数错误  
+- ✅ **业务调用**: 传递 `r.Context()` 给Service层，使用指针传递请求结构体
+- ✅ **响应处理**: 统一使用 `utils.Success()` 和 `utils.Fail()` 处理响应
+- ✅ **中文提示**: 所有错误信息和成功信息使用中文
+
+**响应处理标准**：
+- 🟢 **成功响应**: `utils.Success(r, data, "操作成功")`
+- 🔴 **业务失败**: `utils.Fail(r, err, "操作失败")`  
+- 🟡 **参数错误**: `utils.ParamError(r, "参数解析错误")`
+- 🔵 **加密响应**: `utils.SuccessEncrypt(r, data, "操作成功")` / `utils.FailEncrypt(r, err, "操作失败")`
 
 **Service层** - 业务逻辑层 (`internal/service/`)
 - ✅ 负责：复杂业务逻辑、数据处理、事务管理、调用Model层
@@ -372,20 +411,20 @@ type LoginRes struct {
 ```go
 // api/controller/user.go
 func (c *UserController) Login(r *ghttp.Request) {
-    // 参数解析
+    // 解析请求参数
     var req models.LoginReq
     if err := r.Parse(&req); err != nil {
-        utils.ParamError(r, "参数错误")
+        utils.ParamError(r, "参数解析错误")
         return
     }
-    
+
     // 调用Service层处理业务逻辑
-    result, err := service.User.Login(r.Context(), req.Username, req.Password)
+    result, err := service.User.Login(r.Context(), &req)
     if err != nil {
         utils.Fail(r, err, "登录失败")
         return
     }
-    
+
     utils.Success(r, result, "登录成功")
 }
 ```

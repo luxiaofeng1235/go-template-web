@@ -1,15 +1,16 @@
 package controller
 
 import (
-	"github.com/gogf/gf/v2/net/ghttp"
 	"go-web-template/internal/service"
 	"go-web-template/utils"
+
+	"github.com/gogf/gf/v2/net/ghttp"
 )
 
-type UploadController struct{}
+type FileController struct{}
 
 // FormImage 表单方式上传图片
-func (c *UploadController) FormImage(r *ghttp.Request) {
+func (c *FileController) FormImage(r *ghttp.Request) {
 	// 直接调用Service层处理图片上传，传入默认参数
 	result, err := service.UploadImageSimple(r, 0, 0, 0)
 	if err != nil {
@@ -21,7 +22,7 @@ func (c *UploadController) FormImage(r *ghttp.Request) {
 }
 
 // FormVideo 表单方式上传视频
-func (c *UploadController) FormVideo(r *ghttp.Request) {
+func (c *FileController) FormVideo(r *ghttp.Request) {
 	// 直接调用Service层处理视频上传，传入默认参数
 	result, err := service.UploadVideoSimple(r, 0, 0, 0)
 	if err != nil {

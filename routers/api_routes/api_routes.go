@@ -40,7 +40,7 @@ func InitRoutes(s *ghttp.Server) {
 		g.Log().Info(ctx, "[API] 注册产品路由...")
 		InitProductRoutes(apiGroup)
 
-		g.Log().Info(ctx, "[API] 注册文件上传路由...")
-		InitUploadRoutes(apiGroup)
+		g.Log().Info(ctx, "[API] 注册文件管理路由...")
+		InitFileRoutes(apiGroup)
 	}
 }
