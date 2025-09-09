@@ -42,12 +42,13 @@ type UploadFileRes struct {
 
 // CreateFileReq 创建文件请求
 type CreateFileReq struct {
-	Name   string `form:"name" json:"name"`
-	CID    uint   `form:"cid" json:"cid"`
-	Type   uint8  `form:"type" json:"type"`
-	URI    string `form:"uri" json:"uri"`
-	ShopID int    `form:"shop_id" json:"shop_id"`
-	UserID uint   `form:"user_id" json:"user_id"`
+	Name       string `form:"name" json:"name"`
+	CID        uint   `form:"cid" json:"cid"`
+	Type       uint8  `form:"type" json:"type"`
+	URI        string `form:"uri" json:"uri"`
+	ShopID     int    `form:"shop_id" json:"shop_id"`
+	UserID     uint   `form:"user_id" json:"user_id"`
+	CreateTime int64  `form:"create_time" json:"create_time"`
 }
 
 // UpdateFileReq 更新文件请求
