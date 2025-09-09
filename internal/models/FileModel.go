@@ -7,7 +7,7 @@ type File struct {
 	CID        uint   `gorm:"column:cid" json:"cid"`                 // 分类ID
 	Type       uint8  `gorm:"column:type" json:"type"`               // 文件类型
 	URI        string `gorm:"column:uri" json:"uri"`                 // 文件路径
-	CreateTime uint   `gorm:"column:create_time" json:"create_time"` // 创建时间
+	CreateTime int64  `gorm:"column:create_time" json:"create_time"` // 创建时间
 	Del        uint8  `gorm:"column:del" json:"del"`                 // 删除状态：0正常 1删除
 	ShopID     int    `gorm:"column:shop_id" json:"shop_id"`         // 店铺ID
 	UserID     uint   `gorm:"column:user_id" json:"user_id"`         // 用户ID
@@ -21,8 +21,8 @@ func (*File) TableName() string {
 
 // UploadFileReq 文件上传请求
 type UploadFileReq struct {
-	CID    uint `form:"cid" json:"cid"`       // 分类ID，可选
-	ShopID int  `form:"shop_id" json:"shop_id"` // 店铺ID，可选  
+	CID    uint `form:"cid" json:"cid"`         // 分类ID，可选
+	ShopID int  `form:"shop_id" json:"shop_id"` // 店铺ID，可选
 	UserID uint `form:"user_id" json:"user_id"` // 用户ID，可选
 }
 
@@ -42,12 +42,13 @@ type UploadFileRes struct {
 
 // CreateFileReq 创建文件请求
 type CreateFileReq struct {
-	Name   string `form:"name" json:"name"`
-	CID    uint   `form:"cid" json:"cid"`
-	Type   uint8  `form:"type" json:"type"`
-	URI    string `form:"uri" json:"uri"`
-	ShopID int    `form:"shop_id" json:"shop_id"`
-	UserID uint   `form:"user_id" json:"user_id"`
+	Name       string `form:"name" json:"name"`
+	CID        uint   `form:"cid" json:"cid"`
+	Type       uint8  `form:"type" json:"type"`
+	URI        string `form:"uri" json:"uri"`
+	CreateTime int64  `form:"create_time" json:"create_time"`
+	ShopID     int    `form:"shop_id" json:"shop_id"`
+	UserID     uint   `form:"user_id" json:"user_id"`
 }
 
 // UpdateFileReq 更新文件请求
@@ -84,7 +85,7 @@ type FileRes struct {
 	Type         uint8  `json:"type"`
 	TypeName     string `json:"type_name,omitempty"` // 类型名称
 	URI          string `json:"uri"`
-	CreateTime   uint   `json:"create_time"`
+	CreateTime   int64  `json:"create_time"`
 	Del          uint8  `json:"del"`
 	DelName      string `json:"del_name,omitempty"` // 删除状态名称
 	ShopID       int    `json:"shop_id"`

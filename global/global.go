@@ -32,7 +32,6 @@ var (
 	NsqPro  *nsq.Producer  // NSQ消息队列生产者
 	KeyLock *sync.Mutex    // 分布式锁（使用sync.Mutex作为简单实现）
 	Ws      *melody.Melody // WebSocket连接管理器
-
 	// === 日志系统相关 ===
 	// 基础日志记录器
 	Errlog     *zap.SugaredLogger // 系统错误日志
@@ -41,16 +40,6 @@ var (
 	Paylog     *zap.SugaredLogger // 支付相关日志
 
 	// WebSocket和消息相关日志
-	Wslog      *zap.SugaredLogger // WebSocket连接日志
-	Nsqlog     *zap.SugaredLogger // 消息队列日志
-	Collectlog *zap.SugaredLogger // 数据采集日志
-	Updatelog  *zap.SugaredLogger // 数据更新日志
+	Wslog *zap.SugaredLogger // WebSocket连接日志
 
-	// 业务域专用日志（继承go-novel的设计，便于后续扩展）
-	Biquge34log  *zap.SugaredLogger // 业务模块1专用日志
-	Paoshu8log   *zap.SugaredLogger // 业务模块2专用日志
-	Xswlog       *zap.SugaredLogger // 业务模块3专用日志
-	Lydlog       *zap.SugaredLogger // 业务模块4专用日志
-	Bqg24log     *zap.SugaredLogger // 业务模块5专用日志
-	Siluke520log *zap.SugaredLogger // 业务模块6专用日志
 )

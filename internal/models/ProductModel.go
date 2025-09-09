@@ -1,21 +1,17 @@
 package models
 
-import (
-	"time"
-)
-
 // ProductModel 产品数据模型
 type ProductModel struct {
-	ID          int       `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name        string    `json:"name" gorm:"type:varchar(100);not null;comment:产品名称"`
-	Description string    `json:"description" gorm:"type:text;comment:产品描述"`
-	Price       float64   `json:"price" gorm:"type:decimal(10,2);default:0.00;comment:价格"`
-	Stock       int       `json:"stock" gorm:"type:int;default:0;comment:库存"`
-	Image       string    `json:"image" gorm:"type:varchar(255);comment:产品图片"`
-	CategoryID  int       `json:"category_id" gorm:"type:int;default:0;comment:分类ID"`
-	Status      int       `json:"status" gorm:"type:tinyint;default:1;comment:状态:1正常,0禁用"`
-	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	ID          int     `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name        string  `json:"name" gorm:"type:varchar(100);not null;comment:产品名称"`
+	Description string  `json:"description" gorm:"type:text;comment:产品描述"`
+	Price       float64 `json:"price" gorm:"type:decimal(10,2);default:0.00;comment:价格"`
+	Stock       int     `json:"stock" gorm:"type:int;default:0;comment:库存"`
+	Image       string  `json:"image" gorm:"type:varchar(255);comment:产品图片"`
+	CategoryID  int     `json:"category_id" gorm:"type:int;default:0;comment:分类ID"`
+	Status      int     `json:"status" gorm:"type:tinyint;default:1;comment:状态:1正常,0禁用"`
+	CreatedAt   int64   `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt   int64   `json:"updated_at" gorm:"column:updated_at"`
 }
 
 // TableName 指定表名

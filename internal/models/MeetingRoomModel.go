@@ -32,8 +32,8 @@ type CreateMeetingRoomReq struct {
 
 // UpdateMeetingRoomReq 更新会议室请求
 type UpdateMeetingRoomReq struct {
-	ID int `form:"id" json:"id"`
 	CreateMeetingRoomReq
+	ID     int  `form:"id" json:"id"`
 	Status int8 `form:"status" json:"status"`
 }
 

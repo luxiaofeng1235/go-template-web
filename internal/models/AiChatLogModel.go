@@ -12,8 +12,8 @@ type AiChatLog struct {
 	UserID     string         `gorm:"column:user_id" json:"user_id"`         // 用户ID
 	ModelID    int64          `gorm:"column:model_id" json:"model_id"`       // 模型ID
 	Chat       datatypes.JSON `gorm:"column:chat" json:"chat"`               // 聊天内容
-	CreateTime *time.Time     `gorm:"column:create_time" json:"create_time"` // 创建时间
-	UpdateTime *time.Time     `gorm:"column:update_time" json:"update_time"` // 更新时间
+	CreateTime int64          `gorm:"column:create_time" json:"create_time"` // 创建时间
+	UpdateTime int64          `gorm:"column:update_time" json:"update_time"` // 更新时间
 }
 
 func (*AiChatLog) TableName() string {
@@ -58,8 +58,8 @@ type AiChatLogRes struct {
 	ModelID    int64                  `json:"model_id"`
 	ModelName  string                 `json:"model_name,omitempty"`
 	Chat       map[string]interface{} `json:"chat"`
-	CreateTime *time.Time             `json:"create_time"`
-	UpdateTime *time.Time             `json:"update_time"`
+	CreateTime int64                  `json:"create_time"`
+	UpdateTime int64                  `json:"update_time"`
 }
 
 // AiChatLogListRes AI聊天日志列表响应

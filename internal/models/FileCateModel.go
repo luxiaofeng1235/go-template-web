@@ -10,8 +10,8 @@ type FileCate struct {
 	Level      int8   `gorm:"column:level" json:"level"`             // 层级
 	Sort       uint16 `gorm:"column:sort" json:"sort"`               // 排序
 	Del        uint8  `gorm:"column:del" json:"del"`                 // 删除状态：0正常 1删除
-	CreateTime uint   `gorm:"column:create_time" json:"create_time"` // 创建时间
-	UpdateTime uint   `gorm:"column:update_time" json:"update_time"` // 更新时间
+	CreateTime int64  `gorm:"column:create_time" json:"create_time"` // 创建时间
+	UpdateTime int64  `gorm:"column:update_time" json:"update_time"` // 更新时间
 }
 
 func (*FileCate) TableName() string {
@@ -68,8 +68,8 @@ type FileCateRes struct {
 	Sort       uint16        `json:"sort"`
 	Del        uint8         `json:"del"`
 	DelName    string        `json:"del_name,omitempty"` // 删除状态名称
-	CreateTime uint          `json:"create_time"`
-	UpdateTime uint          `json:"update_time"`
+	CreateTime int64         `json:"create_time"`
+	UpdateTime int64         `json:"update_time"`
 	Children   []FileCateRes `json:"children,omitempty"` // 子分类
 }
 
