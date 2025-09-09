@@ -751,6 +751,229 @@ func (c *UserController) Login(r *ghttp.Request) {
 }
 ```
 
+## Product API 开发参考示例
+
+### 完整的Product API开发流程示例
+
+基于项目实际创建的Product API，展示标准的开发流程和代码结构：
+
+**第一步：创建Controller控制器** (`api/controller/product.go`)
+```go
+package controller
+
+import (
+	"go-web-template/utils"
+
+	"github.com/gogf/gf/v2/net/ghttp"
+)
+
+type ProductController struct{}
+
+// GetProductList 获取商品列表
+func (c *ProductController) GetProductList(r *ghttp.Request) {
+	// TODO: 实现商品列表逻辑
+	utils.Success(r, map[string]interface{}{
+		"list":     []interface{}{},
+		"total":    0,
+		"page":     1,
+		"pageSize": 10,
+	}, "获取商品列表成功")
+}
+
+// GetCategoryList 获取分类列表
+func (c *ProductController) GetCategoryList(r *ghttp.Request) {
+	// TODO: 实现分类列表逻辑
+	utils.Success(r, map[string]interface{}{
+		"categories": []interface{}{},
+		"total":      0,
+	}, "获取分类列表成功")
+}
+```
+
+**第二步：创建路由配置** (`routers/api_routes/product_route.go`)
+```go
+package api_routes
+
+import (
+	"go-web-template/api/controller"
+
+	"github.com/gogf/gf/v2/net/ghttp"
+)
+
+// InitProductRoutes 初始化商品相关路由
+func InitProductRoutes(group *ghttp.RouterGroup) {
+	productController := &controller.ProductController{}
+
+	// 商品路由组
+	productGroup := group.Group("/product")
+	{
+		// GET /api/product/getProductList - 获取商品列表
+		productGroup.GET("/getProductList", productController.GetProductList)
+		
+		// GET /api/product/getCategoryList - 获取分类列表  
+		productGroup.GET("/getCategoryList", productController.GetCategoryList)
+	}
+}
+```
+
+**第三步：注册到主路由** (`routers/api_routes/api_routes.go`)
+```go
+// API路由组
+apiGroup := s.Group("/api")
+{
+	g.Log().Info(ctx, "[API] 注册产品路由...")
+	InitProductRoutes(apiGroup)        // ✅ 添加这一行
+	
+	g.Log().Info(ctx, "[API] 注册文件管理路由...")
+	InitFileRoutes(apiGroup)
+	InitChatRoutes(apiGroup)
+}
+```
+
+### API接口命名规范
+
+**接口路径采用功能性命名**：
+- ✅ `GET /api/product/getProductList` - 获取商品列表
+- ✅ `GET /api/product/getCategoryList` - 获取分类列表
+- ✅ `GET /api/chat/getTokens` - 获取Token信息
+- ✅ `POST /api/file/formimage` - 表单上传图片
+- ✅ `POST /api/file/formvideo` - 表单上传视频
+
+**命名原则**：
+- 使用动词开头：`get`、`create`、`update`、`delete`
+- 明确表达功能意图：`getProductList` 比 `list` 更明确
+- 保持一致性：同类接口使用相同的命名模式
+
+### 响应格式标准
+
+**统一的响应格式**（包含 `show` 字段）：
+```json
+{
+  "code": 1,
+  "show": 0,
+  "data": {
+    "list": [],
+    "total": 0,
+    "page": 1,
+    "pageSize": 10
+  },
+  "msg": "获取商品列表成功"
+}
+```
+
+**响应字段说明**：
+- `code`: 状态码（1=成功，0=失败）
+- `show`: 显示标识（默认为0）
+- `data`: 具体数据内容
+- `msg`: 中文提示信息
+
+### Service层扩展规范
+
+当需要实现具体业务逻辑时，Service层的标准实现：
+
+```go
+// internal/service/product.go
+package service
+
+import (
+	"go-web-template/internal/models"
+	"go-web-template/global"
+)
+
+// GetProductList 获取商品列表业务逻辑
+func GetProductList(req *models.ProductListReq) (list []models.Product, total int64, err error) {
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+	
+	offset := (req.Page - 1) * req.PageSize
+	
+	// 查询数据
+	query := global.DB.Model(&models.Product{})
+	
+	// 添加查询条件
+	if req.CategoryID > 0 {
+		query = query.Where("category_id = ?", req.CategoryID)
+	}
+	
+	// 获取总数
+	err = query.Count(&total).Error
+	if err != nil {
+		global.Errlog.Error("查询商品总数失败", "error", err)
+		return
+	}
+	
+	// 获取列表数据
+	err = query.Offset(offset).Limit(req.PageSize).Find(&list).Error
+	if err != nil {
+		global.Errlog.Error("查询商品列表失败", "error", err)
+		return
+	}
+	
+	global.Requestlog.Info("商品列表查询成功", "total", total, "page", req.Page)
+	return
+}
+
+// GetCategoryList 获取分类列表
+func GetCategoryList() (categories []models.Category, err error) {
+	err = global.DB.Where("status = ?", 1).Find(&categories).Error
+	if err != nil {
+		global.Errlog.Error("查询分类列表失败", "error", err)
+		return
+	}
+	
+	global.Requestlog.Info("分类列表查询成功", "count", len(categories))
+	return
+}
+```
+
+### Controller层调用Service的完整示例
+
+```go
+// GetProductList 获取商品列表 - 完整业务实现版本
+func (c *ProductController) GetProductList(r *ghttp.Request) {
+	// 解析请求参数
+	var req models.ProductListReq
+	if err := r.Parse(&req); err != nil {
+		utils.ParamError(r, "参数解析错误")
+		return
+	}
+
+	// 调用Service层处理业务逻辑
+	list, total, err := service.GetProductList(&req)
+	if err != nil {
+		utils.Fail(r, err, "获取商品列表失败")
+		return
+	}
+
+	// 构造响应数据
+	data := map[string]interface{}{
+		"list":     list,
+		"total":    total,
+		"page":     req.Page,
+		"pageSize": req.PageSize,
+	}
+
+	utils.Success(r, data, "获取商品列表成功")
+}
+```
+
+### 文件上传接口参考
+
+项目中已实现的文件上传接口可作为开发参考：
+
+**图片上传**: `POST /api/file/formimage`
+**视频上传**: `POST /api/file/formvideo`
+
+**特点**：
+- 支持 `multipart/form-data` 格式
+- 文件保存到 `public/uploads/YYYYMMDD/` 目录
+- 返回可访问的完整URL：`http://localhost:8082/uploads/YYYYMMDD/xxx.jpg`
+- 统一的响应格式（包含 `show: 0` 字段）
+
 ## 版本信息
 
 - **创建日期**: 2025-09-09

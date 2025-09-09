@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"go-web-template/internal/service/common"
 	"go-web-template/utils"
 
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -21,9 +22,17 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 
 // GetCategoryList 获取分类列表
 func (c *ProductController) GetCategoryList(r *ghttp.Request) {
-	// TODO: 实现分类列表逻辑
-	utils.Success(r, map[string]interface{}{
-		"categories": []interface{}{},
-		"total":      0,
-	}, "获取分类列表成功")
+	// 调用common服务获取分类列表
+	categories := common.GetProductCategoryList()
+	
+	// 将value=0的标签强制设置为"全部"
+	for i, category := range categories {
+		if category.Value == 0 {
+			categories[i].Label = "全部"
+			break
+		}
+	}
+	
+	// 直接返回分类数组作为data
+	utils.Success(r, categories, "获取分类列表成功")
 }
