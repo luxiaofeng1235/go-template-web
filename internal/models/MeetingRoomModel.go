@@ -12,8 +12,8 @@ type MeetingRoom struct {
 	CallType         int8           `gorm:"column:call_type" json:"call_type"`                   // 通话类型：1语音 2视频
 	Status           int8           `gorm:"column:status" json:"status"`                         // 状态：1进行中 2已结束 3已取消
 	Participants     datatypes.JSON `gorm:"column:participants" json:"participants"`             // 参与者JSON数据
-	CreatedAt        int            `gorm:"column:created_at" json:"created_at"`                 // 创建时间
-	UpdatedAt        int            `gorm:"column:updated_at" json:"updated_at"`                 // 更新时间
+	CreatedAt        int64          `gorm:"column:created_at" json:"created_at"`                 // 创建时间
+	UpdatedAt        int64          `gorm:"column:updated_at" json:"updated_at"`                 // 更新时间
 }
 
 func (*MeetingRoom) TableName() string {
@@ -28,6 +28,8 @@ type CreateMeetingRoomReq struct {
 	CreatorAccessKey string                 `form:"creator_access_key" json:"creator_access_key"`
 	CallType         int8                   `form:"call_type" json:"call_type"`
 	Participants     map[string]interface{} `form:"participants" json:"participants"`
+	CreatedAt        int64                  `form:"created_at" json:"created_at"` // 创建时间
+	UpdatedAt        int64                  `form:"updated_at" json:"updated_at"` // 更新时间
 }
 
 // UpdateMeetingRoomReq 更新会议室请求
@@ -79,8 +81,8 @@ type MeetingRoomRes struct {
 	StatusName       string                 `json:"status_name,omitempty"` // 状态名称
 	Participants     map[string]interface{} `json:"participants"`
 	ParticipantCount int                    `json:"participant_count,omitempty"` // 参与者数量
-	CreatedAt        int                    `json:"created_at"`
-	UpdatedAt        int                    `json:"updated_at"`
+	CreatedAt        int64                  `json:"created_at"`
+	UpdatedAt        int64                  `json:"updated_at"`
 }
 
 // MeetingParticipant 会议参与者结构

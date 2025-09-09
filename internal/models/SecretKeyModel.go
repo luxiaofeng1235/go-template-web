@@ -34,6 +34,8 @@ type CreateSecretKeyReq struct {
 	AvtarURL          string `form:"avtar_url" json:"avtar_url"`
 	Position          string `form:"position" json:"position"`
 	DeviceInfo        string `form:"device_info" json:"device_info"`
+	CreatedAt         int64  `form:"created_at" json:"created_at"` // 创建时间
+	UpdatedAt         int64  `form:"updated_at" json:"updated_at"` // 更新时间
 }
 
 // UpdateSecretKeyReq 更新用户密钥请求

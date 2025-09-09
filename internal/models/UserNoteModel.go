@@ -6,8 +6,8 @@ type UserNote struct {
 	AccessKey   string `gorm:"column:access_key" json:"access_key"`       // 访问密钥
 	ToAccessKey string `gorm:"column:to_access_key" json:"to_access_key"` // 目标用户访问密钥
 	UserNote    string `gorm:"column:user_note" json:"user_note"`         // 用户备注
-	CreatedAt   int    `gorm:"column:created_at" json:"created_at"`       // 创建时间
-	UpdatedAt   int    `gorm:"column:updated_at" json:"updated_at"`       // 更新时间
+	CreatedAt   int64  `gorm:"column:created_at" json:"created_at"`       // 创建时间
+	UpdatedAt   int64  `gorm:"column:updated_at" json:"updated_at"`       // 更新时间
 }
 
 func (*UserNote) TableName() string {
@@ -21,6 +21,8 @@ type CreateUserNoteReq struct {
 	AccessKey   string `form:"access_key" json:"access_key"`
 	ToAccessKey string `form:"to_access_key" json:"to_access_key"`
 	UserNote    string `form:"user_note" json:"user_note"`
+	CreatedAt   int64  `form:"created_at" json:"created_at"` // 创建时间
+	UpdatedAt   int64  `form:"updated_at" json:"updated_at"` // 更新时间
 }
 
 // UpdateUserNoteReq 更新用户备注请求
@@ -59,8 +61,8 @@ type UserNoteRes struct {
 	AccessKey      string `json:"access_key"`
 	ToAccessKey    string `json:"to_access_key"`
 	UserNote       string `json:"user_note"`
-	CreatedAt      int    `json:"created_at"`
-	UpdatedAt      int    `json:"updated_at"`
+	CreatedAt      int64  `json:"created_at"`
+	UpdatedAt      int64  `json:"updated_at"`
 	UserNickname   string `json:"user_nickname,omitempty"`    // 用户昵称
 	ToUserNickname string `json:"to_user_nickname,omitempty"` // 目标用户昵称
 }
