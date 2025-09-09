@@ -5,13 +5,7 @@
 .settings/
 .vscode/
 
-# 临时文件
-.hgignore.swp
-.orig
-.swp
 **/.DS_Store
-*.tmp
-*.log
 
 # 构建输出
 bin/
@@ -25,9 +19,6 @@ main.exe
 *.exe
 
 # Go相关
-vendor/
-*.test
-*.out
 coverage.txt
 
 # 配置文件敏感信息（如果有的话）
