@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"go-web-template/internal/service/api"
 	"go-web-template/internal/service/common"
 	"go-web-template/utils"
 
@@ -11,13 +12,21 @@ type ProductController struct{}
 
 // GetProductList 获取商品列表
 func (c *ProductController) GetProductList(r *ghttp.Request) {
-	// TODO: 实现商品列表逻辑
-	utils.Success(r, map[string]interface{}{
-		"list":     []interface{}{},
-		"total":    0,
-		"page":     1,
-		"pageSize": 10,
-	}, "获取商品列表成功")
+	// 解析请求参数
+	var req api.ProductListReq
+	if err := r.Parse(&req); err != nil {
+		utils.ParamError(r, "参数解析错误")
+		return
+	}
+
+	// 调用service层处理业务逻辑
+	list, err := api.GetProductList(r, &req)
+	if err != nil {
+		utils.Fail(r, err, "获取商品列表失败")
+		return
+	}
+
+	utils.Success(r, list, "获取商品列表成功")
 }
 
 // GetCategoryList 获取分类列表
