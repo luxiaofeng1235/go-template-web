@@ -24,9 +24,11 @@ func (*AiChatLog) TableName() string {
 
 // CreateAiChatLogReq 创建AI聊天日志请求
 type CreateAiChatLogReq struct {
-	UserID  string                 `form:"user_id" json:"user_id" `
-	ModelID int64                  `form:"model_id" json:"model_id" `
-	Chat    map[string]interface{} `form:"chat" json:"chat" `
+	UserID     string                 `form:"user_id" json:"user_id" `
+	ModelID    int64                  `form:"model_id" json:"model_id" `
+	Chat       map[string]interface{} `form:"chat" json:"chat" `
+	CreateTime int64                  `form:"create_time" json:"create_time"` // 创建时间
+	UpdateTime int64                  `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // GetAiChatLogListReq 获取AI聊天日志列表请求

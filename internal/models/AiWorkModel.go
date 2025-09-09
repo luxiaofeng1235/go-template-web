@@ -26,10 +26,12 @@ func (*AiWork) TableName() string {
 
 // CreateAiWorkReq 创建AI工作任务请求
 type CreateAiWorkReq struct {
-	UserID string                 `form:"user_id" json:"user_id" `
-	TaskID string                 `form:"task_id" json:"task_id"`
-	Params map[string]interface{} `form:"params" json:"params" `
-	Type   int8                   `form:"type" json:"type" `
+	UserID     string                 `form:"user_id" json:"user_id" `
+	TaskID     string                 `form:"task_id" json:"task_id"`
+	Params     map[string]interface{} `form:"params" json:"params" `
+	Type       int8                   `form:"type" json:"type" `
+	CreateTime int64                  `form:"create_time" json:"create_time"` // 创建时间
+	UpdateTime int64                  `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // UpdateAiWorkReq 更新AI工作任务请求

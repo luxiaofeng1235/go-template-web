@@ -7,6 +7,7 @@ type Config struct {
 	Type       string `gorm:"column:type" json:"type"`               // 配置类型
 	Name       string `gorm:"column:name" json:"name"`               // 配置名称
 	Value      string `gorm:"column:value" json:"value"`             // 配置值
+	CreatedAt  int64  `gorm:"column:created_at" json:"created_at"`   // 创建时间
 	UpdateTime int64  `gorm:"column:update_time" json:"update_time"` // 更新时间
 }
 
@@ -18,10 +19,12 @@ func (*Config) TableName() string {
 
 // CreateConfigReq 创建配置请求
 type CreateConfigReq struct {
-	ShopID int    `form:"shop_id" json:"shop_id"`
-	Type   string `form:"type" json:"type"`
-	Name   string `form:"name" json:"name"`
-	Value  string `form:"value" json:"value"`
+	ShopID     int    `form:"shop_id" json:"shop_id"`
+	Type       string `form:"type" json:"type"`
+	Name       string `form:"name" json:"name"`
+	Value      string `form:"value" json:"value"`
+	CreatedAt  int64  `form:"created_at" json:"created_at"`   // 创建时间
+	UpdateTime int64  `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // UpdateConfigReq 更新配置请求
@@ -53,6 +56,7 @@ type ConfigRes struct {
 	Type       string `json:"type"`
 	Name       string `json:"name"`
 	Value      string `json:"value"`
+	CreatedAt  int64  `json:"created_at"`
 	UpdateTime int64  `json:"update_time"`
 }
 

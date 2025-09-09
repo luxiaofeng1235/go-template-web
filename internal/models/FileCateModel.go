@@ -22,12 +22,14 @@ func (*FileCate) TableName() string {
 
 // CreateFileCateReq 创建文件分类请求
 type CreateFileCateReq struct {
-	ShopID int    `form:"shop_id" json:"shop_id"`
-	Name   string `form:"name" json:"name"`
-	PID    uint   `form:"pid" json:"pid"`
-	Type   uint8  `form:"type" json:"type"`
-	Level  int8   `form:"level" json:"level"`
-	Sort   uint16 `form:"sort" json:"sort"`
+	ShopID     int    `form:"shop_id" json:"shop_id"`
+	Name       string `form:"name" json:"name"`
+	PID        uint   `form:"pid" json:"pid"`
+	Type       uint8  `form:"type" json:"type"`
+	Level      int8   `form:"level" json:"level"`
+	Sort       uint16 `form:"sort" json:"sort"`
+	CreateTime int64  `form:"create_time" json:"create_time"` // 创建时间
+	UpdateTime int64  `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // UpdateFileCateReq 更新文件分类请求

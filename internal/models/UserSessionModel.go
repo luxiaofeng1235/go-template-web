@@ -29,6 +29,8 @@ type CreateSessionReq struct {
 	UserAgent   string `form:"user_agent" json:"user_agent"`
 	WebsocketFD int64  `form:"websocket_fd" json:"websocket_fd"`
 	SessionData string `form:"session_data" json:"session_data"`
+	CreatedAt   int64  `form:"created_at" json:"created_at"` // 创建时间
+	UpdatedAt   int64  `form:"updated_at" json:"updated_at"` // 更新时间
 }
 
 // UpdateSessionReq 更新会话请求
