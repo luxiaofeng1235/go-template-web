@@ -19,6 +19,27 @@ func (*File) TableName() string {
 
 // 请求结构体
 
+// UploadFileReq 文件上传请求
+type UploadFileReq struct {
+	CID    uint `form:"cid" json:"cid"`       // 分类ID，可选
+	ShopID int  `form:"shop_id" json:"shop_id"` // 店铺ID，可选  
+	UserID uint `form:"user_id" json:"user_id"` // 用户ID，可选
+}
+
+// UploadFileRes 文件上传响应
+type UploadFileRes struct {
+	ID       uint   `json:"id"`        // 文件ID
+	Name     string `json:"name"`      // 原始文件名
+	Type     uint8  `json:"type"`      // 文件类型
+	TypeName string `json:"type_name"` // 文件类型名称
+	Size     int64  `json:"size"`      // 文件大小(字节)
+	URI      string `json:"uri"`       // 访问URL
+	BaseURI  string `json:"base_uri"`  // 相对路径(用于数据库存储)
+	CID      uint   `json:"cid"`       // 分类ID
+	ShopID   int    `json:"shop_id"`   // 店铺ID
+	UserID   uint   `json:"user_id"`   // 用户ID
+}
+
 // CreateFileReq 创建文件请求
 type CreateFileReq struct {
 	Name   string `form:"name" json:"name"`
