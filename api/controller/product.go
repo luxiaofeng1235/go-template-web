@@ -24,7 +24,6 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 func (c *ProductController) GetCategoryList(r *ghttp.Request) {
 	// 调用common服务获取分类列表
 	categories := common.GetProductCategoryList()
-	
 	// 将value=0的标签强制设置为"全部"
 	for i, category := range categories {
 		if category.Value == 0 {
@@ -32,7 +31,6 @@ func (c *ProductController) GetCategoryList(r *ghttp.Request) {
 			break
 		}
 	}
-	
 	// 直接返回分类数组作为data
 	utils.Success(r, categories, "获取分类列表成功")
 }
