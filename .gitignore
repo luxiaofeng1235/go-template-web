@@ -1,0 +1,46 @@
+# IDE相关
+.buildpath
+.project
+.idea/
+.settings/
+.vscode/
+
+# 临时文件
+.hgignore.swp
+.orig
+.swp
+**/.DS_Store
+*.tmp
+*.log
+
+# 构建输出
+bin/
+output/
+manifest/output/
+temp/
+temp.yaml
+gf
+main
+main.exe
+*.exe
+
+# Go相关
+vendor/
+*.test
+*.out
+coverage.txt
+
+# 配置文件敏感信息（如果有的话）
+.env
+.env.local
+.env.production
+
+# 日志文件
+logs/
+*.log
+
+# 运行时临时文件
+public/uploads/
+storage/config/common.yaml
+.env
+*.local

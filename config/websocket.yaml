@@ -1,0 +1,75 @@
+# WebSocket聊天平台配置文件
+
+# 通信密钥配置
+security:
+  secretKey: "7a4f8b1c3d9e2a5f6b8c1d3e5f7a9b2c4d6e8f1a3b5c7d9e2f4a6b8c1d3e5f7a"  # 通信密钥
+  appKey: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"  # 获取进入H5或PC的暗号
+
+# Token配置
+token:
+  expireTime: 86400      # Token过期时间，24小时（秒）
+  refreshThreshold: 3600 # Token自动刷新阈值，1小时内自动刷新（秒）
+
+# WebSocket连接配置
+websocket:
+  heartbeatInterval: 60   # 心跳间隔（秒）
+  maxConnections: 1000    # 最大连接数
+  readTimeout: 60         # 读取超时（秒）
+  writeTimeout: 60        # 写入超时（秒）
+  pingPeriod: 54          # Ping周期（秒，应小于heartbeatInterval）
+
+# 聊天功能配置
+message:
+  maxLength: 2000         # 消息最大长度（文本内容或图片URL）
+  pageSize: 20            # 分页大小
+  historyDays: 30         # 历史消息保留天数
+  allowedTypes:           # 支持的消息类型
+    - "text"              # 文本消息
+    - "image"             # 图片消息
+    - "audio"             # 音频消息
+    - "video"             # 视频消息
+    - "file"              # 文件消息
+
+# Redis缓存配置
+cache:
+  redisPrefix: "ws_chat_"        # Redis键前缀
+  userOnlineExpire: 300          # 用户在线状态过期时间（秒）
+  messageCacheExpire: 3600       # 消息缓存过期时间（秒）
+  roomCacheExpire: 1800          # 房间信息缓存过期时间（秒）
+
+# 房间配置
+room:
+  maxUsers: 100                  # 单个房间最大用户数
+  defaultRoomName: "默认群聊"     # 默认房间名称
+  allowPrivateMessage: true      # 是否允许私聊
+
+# 音视频通话配置
+rtc:
+  stunServers:                   # STUN服务器列表
+    - "stun:stun.l.google.com:19302"
+    - "stun:stun1.l.google.com:19302"
+  maxCallDuration: 3600          # 最大通话时长（秒）
+  allowVideoCall: true           # 是否允许视频通话
+  allowAudioCall: true           # 是否允许音频通话
+
+# 文件上传配置
+upload:
+  maxFileSize: 10485760          # 最大文件大小，10MB（字节）
+  allowedExtensions:             # 允许的文件扩展名
+    - "jpg"
+    - "jpeg"
+    - "png"
+    - "gif"
+    - "mp4"
+    - "mp3"
+    - "wav"
+    - "pdf"
+    - "doc"
+    - "docx"
+  uploadPath: "/uploads/chat"    # 上传文件存储路径
+
+# 系统限制配置
+limits:
+  messagePerMinute: 30           # 每分钟最大消息数
+  connectionPerIP: 5             # 每IP最大连接数
+  maxRoomsPerUser: 10            # 每用户最大房间数

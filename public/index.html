@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Web Template</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .api-list {
+            margin-top: 30px;
+        }
+        .api-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: white;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        .post { background-color: #28a745; }
+        .get { background-color: #007bff; }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Go Web Template</h1>
+        <p>基于GoFrame框架，参考private-ai-chat架构设计的Web应用模板</p>
+        
+        <h2>📋 架构特点</h2>
+        <ul>
+            <li><strong>API层</strong>: 控制器扁平+全小写命名</li>
+            <li><strong>Internal层</strong>: 内部核心支撑层（业务逻辑、模型、配置等）</li>
+            <li><strong>Utils层</strong>: 全局工具函数目录</li>
+            <li><strong>统一响应封装</strong>: 参考go-novel的SuccessEncrypt设计</li>
+        </ul>
+        
+        <h2>🔌 API接口</h2>
+        <div class="api-list">
+            <div class="api-item">
+                <span class="method post">POST</span>
+                <code>/api/user/register</code>
+                <p>用户注册 - 参数: username, password, email</p>
+            </div>
+            <div class="api-item">
+                <span class="method post">POST</span>
+                <code>/api/user/login</code>
+                <p>用户登录 - 参数: username, password</p>
+            </div>
+            <div class="api-item">
+                <span class="method get">GET</span>
+                <code>/api/user/profile</code>
+                <p>获取用户信息 - 参数: user_id</p>
+            </div>
+            <div class="api-item">
+                <span class="method get">GET</span>
+                <code>/api/product/list</code>
+                <p>获取产品列表 - 参数: page, page_size</p>
+            </div>
+            <div class="api-item">
+                <span class="method get">GET</span>
+                <code>/api/product/detail</code>
+                <p>获取产品详情 - 参数: id</p>
+            </div>
+            <div class="api-item">
+                <span class="method post">POST</span>
+                <code>/api/product/create</code>
+                <p>创建产品 - 参数: name, description, price</p>
+            </div>
+        </div>
+        
+        <h2>🗄️ 数据库配置</h2>
+        <ul>
+            <li><strong>数据库</strong>: template_chat</li>
+            <li><strong>主机</strong>: localhost:3306</li>
+            <li><strong>用户名</strong>: root</li>
+            <li><strong>密码</strong>: root</li>
+            <li><strong>表前缀</strong>: ls_</li>
+        </ul>
+        
+        <p style="text-align: center; margin-top: 40px; color: #666;">
+            🔐 支持API响应加密 | 📦 基于GoFrame v2 | 🎯 参考private-ai-chat架构
+        </p>
+    </div>
+</body>
+</html>
