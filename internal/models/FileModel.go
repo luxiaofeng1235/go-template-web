@@ -42,13 +42,12 @@ type UploadFileRes struct {
 
 // CreateFileReq 创建文件请求
 type CreateFileReq struct {
-	Name       string `form:"name" json:"name"`
-	CID        uint   `form:"cid" json:"cid"`
-	Type       uint8  `form:"type" json:"type"`
-	URI        string `form:"uri" json:"uri"`
-	CreateTime int64  `form:"create_time" json:"create_time"`
-	ShopID     int    `form:"shop_id" json:"shop_id"`
-	UserID     uint   `form:"user_id" json:"user_id"`
+	Name   string `form:"name" json:"name"`
+	CID    uint   `form:"cid" json:"cid"`
+	Type   uint8  `form:"type" json:"type"`
+	URI    string `form:"uri" json:"uri"`
+	ShopID int    `form:"shop_id" json:"shop_id"`
+	UserID uint   `form:"user_id" json:"user_id"`
 }
 
 // UpdateFileReq 更新文件请求
@@ -85,7 +84,7 @@ type FileRes struct {
 	Type         uint8  `json:"type"`
 	TypeName     string `json:"type_name,omitempty"` // 类型名称
 	URI          string `json:"uri"`
-	CreateTime   int64  `json:"create_time"`
+	CreateTime   uint   `json:"create_time"`
 	Del          uint8  `json:"del"`
 	DelName      string `json:"del_name,omitempty"` // 删除状态名称
 	ShopID       int    `json:"shop_id"`
@@ -115,19 +114,12 @@ func GetFileTypeName(fileType uint8) string {
 	switch fileType {
 	case FileTypeImage:
 		return "图片"
-	case FileTypeDocument:
-		return "文档"
 	case FileTypeVideo:
 		return "视频"
 	case FileTypeAudio:
 		return "音频"
-	case FileTypeArchive:
-		return "压缩包"
-	case FileTypeOther:
-		return "其他"
-	default:
-		return "未知类型"
 	}
+	return "未知类型"
 }
 
 // GetFileDelName 获取删除状态名称
