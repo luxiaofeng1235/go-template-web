@@ -102,6 +102,63 @@ func (c *XxxController) Action(r *ghttp.Request) {
 - ❌ 禁止：复杂业务逻辑、跨表复杂查询、事务处理
 - 📁 位置：`internal/models/UserModel.go`、`internal/models/ProductModel.go`
 
+### 📅 时间字段统一规范
+
+**时间字段类型统一**：
+- ✅ **统一类型**: 所有模型的时间字段必须使用 `int64` 类型
+- ✅ **字段命名**: 使用 `CreatedAt`、`UpdatedAt`、`CreateTime`、`UpdateTime`
+- ✅ **时间赋值**: 统一调用 `utils.GetUnix()` 获取当前Unix时间戳
+
+**时间字段定义示例**：
+```go
+// 数据库实体结构体
+type User struct {
+    ID        int64  `gorm:"column:id" json:"id"`
+    Username  string `gorm:"column:username" json:"username"`
+    CreatedAt int64  `gorm:"column:created_at" json:"created_at"` // 创建时间
+    UpdatedAt int64  `gorm:"column:updated_at" json:"updated_at"` // 更新时间
+}
+
+// 创建请求结构体
+type CreateUserReq struct {
+    Username  string `form:"username" json:"username"`
+    CreatedAt int64  `form:"created_at" json:"created_at"` // 创建时间
+    UpdatedAt int64  `form:"updated_at" json:"updated_at"` // 更新时间
+}
+```
+
+**Service层时间赋值标准**：
+```go
+// 创建记录时的时间赋值
+func CreateUser(req *models.CreateUserReq) error {
+    now := utils.GetUnix() // 统一使用utils.GetUnix()
+    
+    user := models.User{
+        Username:  req.Username,
+        CreatedAt: now,
+        UpdatedAt: now,
+    }
+    
+    return global.DB.Create(&user).Error
+}
+
+// 更新记录时的时间赋值
+func UpdateUser(id int64, req *models.UpdateUserReq) error {
+    updates := map[string]interface{}{
+        "username":   req.Username,
+        "updated_at": utils.GetUnix(), // 统一使用utils.GetUnix()
+    }
+    
+    return global.DB.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
+}
+```
+
+**时间字段规范要求**：
+- 🕐 **创建时**: `CreatedAt` 和 `UpdatedAt` 都设置为 `utils.GetUnix()`
+- 🕐 **更新时**: 只更新 `UpdatedAt` 为 `utils.GetUnix()`
+- 🕐 **禁止使用**: `time.Now()`、`time.Unix()`等其他时间函数
+- 🕐 **数据库存储**: 统一存储Unix时间戳（秒级）
+
 **Router层** - 路由配置层 (`routers/`)
 - ✅ 负责：路由分组、中间件配置、接口路径定义
 - 📁 位置：`routers/api_routes/`（前端接口）、`routers/admin_routes/`（后台管理）
@@ -138,16 +195,14 @@ type LoginReq struct {  // 严格禁止这样做！
 // internal/models/UserModel.go
 package models
 
-import "time"
-
 // 数据库实体结构体
 type User struct {
-    ID       int64     `gorm:"column:id" json:"id"`             // 用户ID
-    Username string    `gorm:"column:username" json:"username"` // 用户名
-    Email    string    `gorm:"column:email" json:"email"`       // 邮箱地址
-    Status   int       `gorm:"column:status" json:"status"`     // 用户状态：1正常 0禁用
-    CreateAt time.Time `gorm:"column:create_at" json:"create_at"` // 创建时间
-    UpdateAt time.Time `gorm:"column:update_at" json:"update_at"` // 更新时间
+    ID        int64  `gorm:"column:id" json:"id"`               // 用户ID
+    Username  string `gorm:"column:username" json:"username"`   // 用户名
+    Email     string `gorm:"column:email" json:"email"`         // 邮箱地址
+    Status    int    `gorm:"column:status" json:"status"`       // 用户状态：1正常 0禁用
+    CreatedAt int64  `gorm:"column:created_at" json:"created_at"` // 创建时间
+    UpdatedAt int64  `gorm:"column:updated_at" json:"updated_at"` // 更新时间
 }
 
 // 接口请求结构体 - 必须在Model中定义
@@ -236,6 +291,7 @@ func List(req *models.BookListReq) (list []models.BookListRes, total int64, err 
 - 📝 **复杂请求使用结构体**: 多个参数或复杂查询条件使用 `*models.XxxReq` 结构体
 - 📝 **简单请求使用基本类型**: 单一参数查询直接使用 `int64`, `string` 等基本类型
 - 📝 **立即参数验证**: 函数开头立即验证关键参数，使用中文错误信息
+- 🕐 **时间字段处理**: 统一使用 `utils.GetUnix()` 设置创建和更新时间
 
 ```go
 // 复杂请求示例 - 使用结构体参数

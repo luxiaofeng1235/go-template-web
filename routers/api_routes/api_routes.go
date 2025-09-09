@@ -34,11 +34,11 @@ func InitRoutes(s *ghttp.Server) {
 	// API路由组
 	apiGroup := s.Group("/api")
 	{
-		g.Log().Info(ctx, "[API] 注册用户路由...")
-		InitUserRoutes(apiGroup)
+		// g.Log().Info(ctx, "[API] 注册用户路由...")
+		// InitUserRoutes(apiGroup)
 
-		g.Log().Info(ctx, "[API] 注册产品路由...")
-		InitProductRoutes(apiGroup)
+		// g.Log().Info(ctx, "[API] 注册产品路由...")  
+		// InitProductRoutes(apiGroup)
 
 		g.Log().Info(ctx, "[API] 注册文件管理路由...")
 		InitFileRoutes(apiGroup)

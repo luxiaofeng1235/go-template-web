@@ -15,12 +15,10 @@ var RedisClient *redis.Client
 func GetRedisConfig() (addr string, passwd string, defaultdb int) {
 	// 直接从配置文件读取，不区分环境
 	cfg := config.Config
-	if cfg != nil && len(cfg.Redis.Default) > 0 {
-		addr = fmt.Sprintf("%v", cfg.Redis.Default["address"])
-		passwd = fmt.Sprintf("%v", cfg.Redis.Default["password"])
-		if cfg.Redis.Default["db"] != nil {
-			defaultdb = int(cfg.Redis.Default["db"].(int))
-		}
+	if cfg != nil {
+		addr = cfg.Redis.Default.Address
+		passwd = cfg.Redis.Default.Password
+		defaultdb = cfg.Redis.Default.DB
 	} else {
 		// 默认配置
 		addr = "127.0.0.1:6379"
