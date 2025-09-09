@@ -1,9 +1,34 @@
+/*
+ * @file: file.go
+ * @description: 文件相关常量定义
+ * @author: go-web-template
+ * @created: 2025-09-09
+ * @version: 1.0.0
+ * @license: MIT License
+ */
+
 package constant
 
-// 文件类型常量 - 仅支持图片和视频
+// 文件类型常量
 const (
-	IMAGE_TYPE = 10 // 图片类型
-	VIDEO_TYPE = 20 // 视频类型
+	FILE_TYPE_IMAGE    uint8 = 10 // 图片
+	FILE_TYPE_DOCUMENT uint8 = 20 // 文档
+	FILE_TYPE_VIDEO    uint8 = 30 // 视频
+	FILE_TYPE_AUDIO    uint8 = 40 // 音频
+	FILE_TYPE_ARCHIVE  uint8 = 50 // 压缩包
+	FILE_TYPE_OTHER    uint8 = 60 // 其他
+)
+
+// 删除状态常量
+const (
+	FILE_DEL_NORMAL  uint8 = 0 // 正常
+	FILE_DEL_DELETED uint8 = 1 // 删除
+)
+
+// 向后兼容的别名
+const (
+	IMAGE_TYPE = FILE_TYPE_IMAGE // 图片类型（向后兼容）
+	VIDEO_TYPE = FILE_TYPE_VIDEO // 视频类型（向后兼容）
 )
 
 // 上传配置常量
@@ -12,6 +37,34 @@ const (
 	MAX_IMAGE_SIZE  = 10                // 图片最大大小(MB)
 	MAX_VIDEO_SIZE  = 100               // 视频最大大小(MB)
 )
+
+// 文件类型结构体
+type FileType struct {
+	Value uint8  `json:"value"` // 类型值
+	Label string `json:"label"` // 类型名称
+}
+
+// 文件类型枚举列表（前端下拉框直接遍历）
+var FileTypeList = []FileType{
+	{Value: FILE_TYPE_IMAGE, Label: "图片"},
+	{Value: FILE_TYPE_DOCUMENT, Label: "文档"},
+	{Value: FILE_TYPE_VIDEO, Label: "视频"},
+	{Value: FILE_TYPE_AUDIO, Label: "音频"},
+	{Value: FILE_TYPE_ARCHIVE, Label: "压缩包"},
+	{Value: FILE_TYPE_OTHER, Label: "其他"},
+}
+
+// 删除状态结构体
+type FileDelStatus struct {
+	Value uint8  `json:"value"` // 状态值
+	Label string `json:"label"` // 状态名称
+}
+
+// 删除状态枚举列表（前端下拉框直接遍历）
+var FileDelStatusList = []FileDelStatus{
+	{Value: FILE_DEL_NORMAL, Label: "正常"},
+	{Value: FILE_DEL_DELETED, Label: "已删除"},
+}
 
 // 允许的文件扩展名 - 仅图片和视频
 var AllowedImageExts = []string{"jpg", "jpeg", "png", "gif", "webp", "bmp"}
@@ -26,15 +79,67 @@ var MimeTypeMap = map[string]string{
 	"gif":  "image/gif",
 	"webp": "image/webp",
 	"bmp":  "image/bmp",
-	
+
 	// 视频类型
 	"mp4":  "video/mp4",
-	"avi":  "video/avi", 
+	"avi":  "video/avi",
 	"mov":  "video/quicktime",
 	"wmv":  "video/x-ms-wmv",
 	"flv":  "video/x-flv",
 	"webm": "video/webm",
 	"mkv":  "video/x-matroska",
+}
+
+// GetFileTypeName 获取文件类型名称
+func GetFileTypeName(fileType uint8) string {
+	switch fileType {
+	case FILE_TYPE_IMAGE:
+		return "图片"
+	case FILE_TYPE_DOCUMENT:
+		return "文档"
+	case FILE_TYPE_VIDEO:
+		return "视频"
+	case FILE_TYPE_AUDIO:
+		return "音频"
+	case FILE_TYPE_ARCHIVE:
+		return "压缩包"
+	case FILE_TYPE_OTHER:
+		return "其他"
+	default:
+		return "未知类型"
+	}
+}
+
+// GetFileDelName 获取删除状态名称
+func GetFileDelName(del uint8) string {
+	switch del {
+	case FILE_DEL_NORMAL:
+		return "正常"
+	case FILE_DEL_DELETED:
+		return "已删除"
+	default:
+		return "未知状态"
+	}
+}
+
+// GetFileTypeByValue 根据值获取文件类型信息
+func GetFileTypeByValue(value uint8) *FileType {
+	for _, fileType := range FileTypeList {
+		if fileType.Value == value {
+			return &fileType
+		}
+	}
+	return nil
+}
+
+// GetFileDelStatusByValue 根据值获取删除状态信息
+func GetFileDelStatusByValue(value uint8) *FileDelStatus {
+	for _, status := range FileDelStatusList {
+		if status.Value == value {
+			return &status
+		}
+	}
+	return nil
 }
 
 // GetFileTypeByExt 根据文件扩展名获取文件类型
@@ -44,13 +149,13 @@ func GetFileTypeByExt(ext string) uint8 {
 			return IMAGE_TYPE
 		}
 	}
-	
+
 	for _, videoExt := range AllowedVideoExts {
 		if ext == videoExt {
 			return VIDEO_TYPE
 		}
 	}
-	
+
 	return 0 // 不支持的文件类型
 }
 
@@ -93,13 +198,13 @@ func IsAllowedExtAny(ext string) bool {
 			return true
 		}
 	}
-	
-	// 检查是否为视频格式  
+
+	// 检查是否为视频格式
 	for _, allowedExt := range AllowedVideoExts {
 		if ext == allowedExt {
 			return true
 		}
 	}
-	
+
 	return false
 }

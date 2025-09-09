@@ -91,45 +91,5 @@ type FileRes struct {
 	UserID       uint   `json:"user_id"`
 }
 
-// 常量定义
-
-// 文件类型常量
-const (
-	FileTypeImage    uint8 = 10 // 图片
-	FileTypeDocument uint8 = 20 // 文档
-	FileTypeVideo    uint8 = 30 // 视频
-	FileTypeAudio    uint8 = 40 // 音频
-	FileTypeArchive  uint8 = 50 // 压缩包
-	FileTypeOther    uint8 = 60 // 其他
-)
-
-// 删除状态常量
-const (
-	FileDelNormal  uint8 = 0 // 正常
-	FileDelDeleted uint8 = 1 // 删除
-)
-
-// GetFileTypeName 获取文件类型名称
-func GetFileTypeName(fileType uint8) string {
-	switch fileType {
-	case FileTypeImage:
-		return "图片"
-	case FileTypeVideo:
-		return "视频"
-	case FileTypeAudio:
-		return "音频"
-	}
-	return "未知类型"
-}
-
-// GetFileDelName 获取删除状态名称
-func GetFileDelName(del uint8) string {
-	switch del {
-	case FileDelNormal:
-		return "正常"
-	case FileDelDeleted:
-		return "已删除"
-	default:
-		return "未知状态"
-	}
-}
+// 注意：文件相关的常量和工具函数已移至 internal/constant/file.go
+// 请使用 constant.FILE_TYPE_* 和 constant.GetFileTypeName() 等函数
