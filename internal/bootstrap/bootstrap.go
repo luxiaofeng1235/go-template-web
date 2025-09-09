@@ -11,6 +11,9 @@ import (
 	"go-web-template/routers/api_routes"
 	"log"
 	"sync"
+	
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 // StartAPIServer 启动API服务器（类似go-novel架构，可灵活配置组件）
@@ -75,9 +78,23 @@ func InitDB() {
 		g.Log().Info(ctx, "数据库连接成功")
 	}
 
-	// 设置全局数据库变量
-	// 注意：这里需要将GoFrame的数据库适配为GORM，或者后续业务层直接使用GoFrame的g.DB()
-	// global.DB = 转换后的GORM实例
+	// 初始化GORM数据库连接
+	cfg := config.Config
+	dsn := cfg.Database.Default.LinkInfo
+	if dsn == "" {
+		// 如果linkInfo为空，构建DSN
+		dsn = "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4&parseTime=True&loc=Local"
+	}
+	
+	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		g.Log().Fatal(ctx, "GORM数据库连接失败:", err)
+		return
+	}
+	
+	// 设置全局GORM数据库实例
+	global.DB = gormDB
+	g.Log().Info(ctx, "GORM数据库初始化成功")
 }
 
 // InitRedis 初始化Redis连接

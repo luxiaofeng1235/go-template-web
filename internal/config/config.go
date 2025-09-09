@@ -16,7 +16,6 @@ type AppConfig struct {
 	JWT      JWTConfig      `yaml:"jwt"`
 	API      APIConfig      `yaml:"api"`
 	OSS      OSSConfig      `yaml:"oss"`
-	AIChat   AIChatConfig   `yaml:"aichat"`
 }
 
 type ServerConfig struct {
@@ -107,9 +106,6 @@ type OSSConfig struct {
 	PolicyFile      string `yaml:"policyFile"`
 }
 
-type AIChatConfig struct {
-	SkToken string `yaml:"skToken"`
-}
 
 // Init 初始化配置
 func Init() {
@@ -147,10 +143,6 @@ func GetOSS() OSSConfig {
 	return Config.OSS
 }
 
-// GetAIChat 获取AI聊天配置
-func GetAIChat() AIChatConfig {
-	return Config.AIChat
-}
 
 // GetAPI 获取API配置
 func GetAPI() APIConfig {

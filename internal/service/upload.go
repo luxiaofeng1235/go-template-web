@@ -128,14 +128,8 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 		return nil, fmt.Errorf("文件记录保存失败")
 	}
 
-	// 生成访问URL
-	baseURL := r.GetHost()
-	if r.TLS != nil {
-		baseURL = "https://" + baseURL
-	} else {
-		baseURL = "http://" + baseURL
-	}
-	fullURL := baseURL + relativeURI
+	// 生成访问URL - 使用URL工具函数统一生成静态资源URL
+	fullURL := utils.GetStaticResourceURL(r, relativeURI)
 
 	// 记录上传成功日志
 	global.Requestlog.Info("文件上传成功",
@@ -149,7 +143,7 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 		ID:       fileRecord.ID,
 		Name:     processedName,
 		Type:     fileType,
-		TypeName: models.GetFileTypeName(fileType),
+		TypeName: constant.GetFileTypeName(fileType),
 		Size:     file.Size,
 		URI:      fullURL,
 		BaseURI:  relativeURI,

@@ -11,6 +11,7 @@ import (
 // ResponseData 基础响应序列化器（参考go-novel的Response结构）
 type ResponseData struct {
 	Code  int         `json:"code"`
+	Show  int         `json:"show"`
 	Data  interface{} `json:"data,omitempty"`
 	Key   string      `json:"key,omitempty"`
 	Msg   string      `json:"msg"`
@@ -35,6 +36,7 @@ type TokenData struct {
 func Success(r *ghttp.Request, data interface{}, msg string) {
 	response := ResponseData{
 		Code: constant.SUCCESS_CODE,
+		Show: 0,
 		Data: data,
 		Msg:  msg,
 	}
@@ -45,6 +47,7 @@ func Success(r *ghttp.Request, data interface{}, msg string) {
 func SuccessEncrypt(r *ghttp.Request, data interface{}, msg string) {
 	response := ResponseData{
 		Code: constant.SUCCESS_CODE,
+		Show: 0,
 		Data: data,
 		Msg:  msg,
 	}
@@ -76,6 +79,7 @@ func Fail(r *ghttp.Request, err error, msg string) {
 	}
 	response := ResponseData{
 		Code: constant.ERROR_CODE,
+		Show: 0,
 		Msg:  msg,
 	}
 	r.Response.WriteJsonExit(response)
@@ -88,6 +92,7 @@ func FailEncrypt(r *ghttp.Request, err error, msg string) {
 	}
 	response := ResponseData{
 		Code: constant.ERROR_CODE,
+		Show: 0,
 		Msg:  msg,
 	}
 
@@ -117,6 +122,7 @@ func ParamError(r *ghttp.Request, msg ...string) {
 
 	r.Response.WriteJsonExit(ResponseData{
 		Code: constant.PARAM_ERROR,
+		Show: 0,
 		Msg:  message,
 		Data: nil,
 	})
@@ -131,6 +137,7 @@ func AuthError(r *ghttp.Request, msg ...string) {
 
 	r.Response.WriteJsonExit(ResponseData{
 		Code: constant.AUTH_ERROR,
+		Show: 0,
 		Msg:  message,
 		Data: nil,
 	})

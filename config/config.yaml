@@ -92,8 +92,4 @@ oss:
   tokenExpireTime: ${OSS_TOKEN_EXPIRE_TIME:900}  # STS Token过期时间（秒）
   policyFile: "${OSS_POLICY_FILE:/policy/bucket_write_policy.txt}"  # OSS权限策略文件路径
 
-# AI聊天服务配置
-aichat:
-  # API认证配置
-  skToken: "${AICHAT_SK_TOKEN}"  # SK Token（Base64编码）从环境变量读取
 
