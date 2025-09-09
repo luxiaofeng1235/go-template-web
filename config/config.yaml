@@ -22,12 +22,12 @@ database:
     # 数据库类型：mysql, postgres, sqlite, mssql
     type: mysql
     
-    # 数据库连接信息
-    host: 127.0.0.1
-    port: 3306
-    user: root
-    pass: root
-    name: template_chat
+    # 数据库连接信息（敏感信息使用环境变量）
+    host: ${DB_HOST:127.0.0.1}
+    port: ${DB_PORT:3306}
+    user: ${DB_USER:root}
+    pass: ${DB_PASS:root}
+    name: ${DB_NAME:template_chat}
     
     # 字符集
     charset: utf8mb4
@@ -39,7 +39,7 @@ database:
     debug: true
     
     # 连接池配置
-    linkInfo: "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4"
+    linkInfo: "${DB_USER:root}:${DB_PASS:root}@tcp(${DB_HOST:127.0.0.1}:${DB_PORT:3306})/${DB_NAME:template_chat}?charset=utf8mb4"
     connMaxIdle: 10
     connMaxOpen: 100
     connMaxLifetime: 300
@@ -47,9 +47,9 @@ database:
 # Redis配置
 redis:
   default:
-    address: "127.0.0.1:6379"
-    db: 0
-    password: ""
+    address: "${REDIS_ADDR:127.0.0.1:6379}"
+    db: ${REDIS_DB:0}
+    password: "${REDIS_PASSWORD:}"
     
 # 日志配置
 logs:
@@ -68,11 +68,27 @@ logs:
   
 # JWT配置
 jwt:
-  secret: "go-web-template-secret-key"
+  secret: "${JWT_SECRET:go-web-template-secret-key}"
   expire: 86400  # 24小时
 
 # API配置（参考go-novel的API加密配置）
 api:
   encrypt: false  # 是否启用响应加密
-  aesKey: "go-web-template-aes-key"  # AES加密密钥
+  aesKey: "${API_AES_KEY:go-web-template-aes-key}"  # AES加密密钥
+
+# OSS配置
+oss:
+  accessKeyId: "${OSS_ACCESS_KEY_ID}"
+  accessKeySecret: "${OSS_ACCESS_KEY_SECRET}"
+  roleArn: "${OSS_ROLE_ARN}"
+  bucket: "${OSS_BUCKET}"
+  endpoint: "${OSS_ENDPOINT}"
+  viewDomain: "${OSS_VIEW_DOMAIN}"
+  tokenExpireTime: ${OSS_TOKEN_EXPIRE_TIME:900}  # STS Token过期时间（秒）
+  policyFile: "${OSS_POLICY_FILE:/policy/bucket_write_policy.txt}"  # OSS权限策略文件路径
+
+# AI聊天服务配置
+aichat:
+  # API认证配置
+  skToken: "${AICHAT_SK_TOKEN}"  # SK Token（Base64编码）从环境变量读取
 
