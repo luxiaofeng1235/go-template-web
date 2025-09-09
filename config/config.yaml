@@ -15,6 +15,11 @@ server:
     address: ":8082"
     serverRoot: "public"  # 统一的静态资源目录
     name: "静态资源服务器"
+    
+  # WebSocket服务器配置
+  websocket:
+    address: "${WEBSOCKET_ADDR::8083}"
+    name: "WebSocket服务器"
   
 database:
   # 默认配置组

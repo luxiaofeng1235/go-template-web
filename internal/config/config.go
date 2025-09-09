@@ -20,9 +20,10 @@ type AppConfig struct {
 }
 
 type ServerConfig struct {
-	API    APIServerConfig    `yaml:"api"`
-	Admin  AdminServerConfig `yaml:"admin"`
-	Source SourceServerConfig `yaml:"source"`
+	API       APIServerConfig       `yaml:"api"`
+	Admin     AdminServerConfig     `yaml:"admin"`
+	Source    SourceServerConfig    `yaml:"source"`
+	WebSocket WebSocketServerConfig `yaml:"websocket"`
 }
 
 type APIServerConfig struct {
@@ -39,6 +40,11 @@ type SourceServerConfig struct {
 	Address    string `yaml:"address"`
 	ServerRoot string `yaml:"serverRoot"`
 	Name       string `yaml:"name"`
+}
+
+type WebSocketServerConfig struct {
+	Address string `yaml:"address"`
+	Name    string `yaml:"name"`
 }
 
 type DatabaseConfig struct {
@@ -149,4 +155,9 @@ func GetAIChat() AIChatConfig {
 // GetAPI 获取API配置
 func GetAPI() APIConfig {
 	return Config.API
+}
+
+// GetWebSocket 获取WebSocket配置
+func GetWebSocket() WebSocketServerConfig {
+	return Config.Server.WebSocket
 }
