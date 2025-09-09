@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go-web-template/utils"
 	"io"
-	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,7 +162,7 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 }
 
 // saveUploadedFile 保存上传的文件到指定路径
-func saveUploadedFile(fileHeader *multipart.FileHeader, destPath string) error {
+func saveUploadedFile(fileHeader *ghttp.UploadFile, destPath string) error {
 	// 打开上传的文件
 	src, err := fileHeader.Open()
 	if err != nil {
