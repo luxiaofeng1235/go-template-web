@@ -77,12 +77,12 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 func (c *ChatController) DeviceAuth(r *ghttp.Request) {
 	utils.Success(r, map[string]interface{}{
 		"message": "1111111",
-	}, "授权记录")
+	}, "设备认证成功")
 }
 
 // 保存用户资料
 func (c *ChatController) SaveUserData(r *ghttp.Request) {
 	utils.Success(r, map[string]interface{}{
 		"message": "2222222222",
-	}, "测试")
+	}, "保存用户资料")
 }
