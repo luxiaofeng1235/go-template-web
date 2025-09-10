@@ -12,7 +12,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go-web-template/global"
 	"go-web-template/internal/constant"
+	"go-web-template/internal/models"
+	"go-web-template/utils"
 	"io"
 	"net/http"
 	"time"
@@ -186,7 +189,7 @@ func (s *AliyunAIService) GenerateVideoWithModel(prompt string, model string, op
 			Prompt: prompt,
 		},
 	}
-	
+
 	// 只有在options不为空且有实际参数时才添加Parameters
 	if options != nil && (options.Duration != 0 || options.Resolution != "" || options.FrameRate != 0) {
 		request.Parameters = *options
@@ -286,6 +289,11 @@ func (s *AliyunAIService) GenerateImageToOSS(prompt string, ossService *OSSServi
 
 // GenerateImageByModel 根据模型生成图片的统一入口方法
 func GenerateImageByModel(modelType int, prompt string, size string, n int, watermark string) (*AliyunAIResponse, error) {
+	return GenerateImageByModelWithUser(modelType, prompt, size, n, watermark, "0")
+}
+
+// GenerateImageByModelWithUser 根据模型生成图片的统一入口方法（包含用户ID）
+func GenerateImageByModelWithUser(modelType int, prompt string, size string, n int, watermark string, userID string) (*AliyunAIResponse, error) {
 	// 创建AI服务实例
 	aiService := NewAliyunAIService()
 	if aiService == nil {
@@ -310,11 +318,50 @@ func GenerateImageByModel(modelType int, prompt string, size string, n int, wate
 		Format: constant.IMAGE_FORMAT_URL,
 	}
 
-	return aiService.GenerateImageWithModel(prompt, model, params)
+	// 调用阿里云API生成图片
+	result, err := aiService.GenerateImageWithModel(prompt, model, params)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查响应中是否包含task_id
+	if result != nil && result.Output != nil {
+		output, ok := result.Output.(map[string]interface{})
+		if ok {
+			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
+				// 保存AI工作记录到数据库
+				err = SaveAIWork(&models.CreateAiWorkReq{
+					UserID: userID,
+					TaskID: taskID,
+					Params: map[string]interface{}{
+						"model":     model,
+						"prompt":    prompt,
+						"size":      size,
+						"n":         n,
+						"watermark": watermark,
+					},
+					Type:       models.AiWorkTypeImage, // 图片生成类型为2
+					CreateTime: utils.GetUnix(),
+					UpdateTime: utils.GetUnix(),
+				})
+				if err != nil {
+					global.Errlog.Error("保存AI图片生成工作记录失败", "taskID", taskID, "error", err)
+					// 不影响主流程，继续返回结果
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // GenerateVideoByType 根据类型生成视频的统一入口方法
 func GenerateVideoByType(toType int, prompt string, imgURL string) (*AliyunAIResponse, error) {
+	return GenerateVideoByTypeWithUser(toType, prompt, imgURL, "0")
+}
+
+// GenerateVideoByTypeWithUser 根据类型生成视频的统一入口方法（包含用户ID）
+func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userID string) (*AliyunAIResponse, error) {
 	// 创建AI服务实例
 	aiService := NewAliyunAIService()
 	if aiService == nil {
@@ -336,7 +383,7 @@ func GenerateVideoByType(toType int, prompt string, imgURL string) (*AliyunAIRes
 	input := VideoGenerateInput{
 		Prompt: prompt,
 	}
-	
+
 	// 如果是图生视频且提供了图片URL，添加到输入中
 	if toType == 1 && imgURL != "" {
 		// 注意：这里需要根据阿里云API的实际要求来处理图片URL
@@ -350,7 +397,40 @@ func GenerateVideoByType(toType int, prompt string, imgURL string) (*AliyunAIRes
 		Input: input,
 	}
 
-	return aiService.makeRequest("POST", constant.ALIYUN_VIDEO_URL, request)
+	// 调用阿里云API生成视频
+	result, err := aiService.makeRequest("POST", constant.ALIYUN_VIDEO_URL, request)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查响应中是否包含task_id
+	if result != nil && result.Output != nil {
+		output, ok := result.Output.(map[string]interface{})
+		if ok {
+			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
+				// 保存AI工作记录到数据库
+				err = SaveAIWork(&models.CreateAiWorkReq{
+					UserID: userID,
+					TaskID: taskID,
+					Params: map[string]interface{}{
+						"to":      toType,
+						"prompt":  prompt,
+						"img_url": imgURL,
+						"model":   model,
+					},
+					Type:       models.AiWorkTypeVideo, // 视频生成类型为4
+					CreateTime: utils.GetUnix(),
+					UpdateTime: utils.GetUnix(),
+				})
+				if err != nil {
+					global.Errlog.Error("保存AI视频生成工作记录失败", "taskID", taskID, "error", err)
+					// 不影响主流程，继续返回结果
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // 便捷方法：直接生成视频并上传到OSS
@@ -386,4 +466,98 @@ func (s *AliyunAIService) GenerateVideoToOSS(prompt string, ossService *OSSServi
 	}
 
 	return ossResult, nil
+}
+
+// SaveAIWork 保存AI工作记录到数据库
+func SaveAIWork(req *models.CreateAiWorkReq) error {
+	if req.TaskID == "" {
+		return fmt.Errorf("任务ID不能为空")
+	}
+
+	// 检查任务是否已存在
+	var count int64
+	err := global.DB.Model(&models.AiWork{}).Where("task_id = ?", req.TaskID).Count(&count).Error
+	if err != nil {
+		global.Sqllog.Error("检查AI工作任务失败", "taskID", req.TaskID, "error", err)
+		return fmt.Errorf("检查AI工作任务失败")
+	}
+	if count > 0 {
+		global.Requestlog.Info("AI工作任务已存在", "taskID", req.TaskID)
+		return nil // 任务已存在，直接返回成功
+	}
+
+	// 转换参数为JSON
+	paramsJSON, err := json.Marshal(req.Params)
+	if err != nil {
+		global.Errlog.Error("序列化参数失败", "taskID", req.TaskID, "error", err)
+		return fmt.Errorf("序列化参数失败")
+	}
+
+	// 创建AI工作记录
+	now := utils.GetUnix()
+	aiWork := models.AiWork{
+		UserID:     req.UserID,
+		TaskID:     req.TaskID,
+		Params:     paramsJSON,
+		Type:       req.Type,
+		Status:     models.AiWorkStatusPending, // 待处理状态
+		CreateTime: now,
+		UpdateTime: now,
+	}
+
+	err = global.DB.Create(&aiWork).Error
+	if err != nil {
+		global.Sqllog.Error("创建AI工作记录失败", "taskID", req.TaskID, "error", err)
+		return fmt.Errorf("创建AI工作记录失败")
+	}
+
+	global.Requestlog.Info("AI工作记录创建成功", "taskID", req.TaskID, "type", req.Type, "userID", req.UserID)
+	return nil
+}
+
+// GetAIWorkByTaskID 根据TaskID获取AI工作记录
+func GetAIWorkByTaskID(taskID string) (*models.AiWork, error) {
+	if taskID == "" {
+		return nil, fmt.Errorf("任务ID不能为空")
+	}
+
+	var aiWork models.AiWork
+	err := global.DB.Where("task_id = ?", taskID).First(&aiWork).Error
+	if err != nil {
+		global.Sqllog.Error("查询AI工作记录失败", "taskID", taskID, "error", err)
+		return nil, fmt.Errorf("工作记录不存在")
+	}
+
+	return &aiWork, nil
+}
+
+// UpdateAIWorkStatus 更新AI工作记录状态
+func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{}) error {
+	if taskID == "" {
+		return fmt.Errorf("任务ID不能为空")
+	}
+
+	updates := map[string]interface{}{
+		"status":      status,
+		"update_time": utils.GetUnix(),
+	}
+
+	// 如果有工作结果，则更新
+	if work != nil {
+		workJSON, err := json.Marshal(work)
+		if err != nil {
+			global.Errlog.Error("序列化工作结果失败", "taskID", taskID, "error", err)
+			return fmt.Errorf("序列化工作结果失败")
+		}
+		updates["work"] = workJSON
+	}
+
+	err := global.DB.Model(&models.AiWork{}).Where("task_id = ?", taskID).Updates(updates).Error
+	if err != nil {
+		global.Sqllog.Error("更新AI工作记录失败", "taskID", taskID, "error", err)
+		return fmt.Errorf("更新AI工作记录失败")
+	}
+
+	global.Requestlog.Info("AI工作记录更新成功", "taskID", taskID, "status", status)
+	return nil
 }

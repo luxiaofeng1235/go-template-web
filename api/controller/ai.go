@@ -9,6 +9,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-web-template/global"
 	"go-web-template/internal/models"
@@ -68,7 +69,7 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 
 	// 构建图片尺寸字符串
 	imageSize := fmt.Sprintf("%d*%d", width, height)
-	
+
 	// 调用图片生成服务 - 统一在service层处理复杂逻辑
 	result, err := common.GenerateImageByModel(req.Model, req.Prompt, imageSize, req.N, req.Watermark)
 	if err != nil {
@@ -94,15 +95,31 @@ func (c *AiController) GetImage(r *ghttp.Request) {
 		return
 	}
 
-	// 这里应该根据task_id查询任务状态
-	// 由于没有具体的任务状态查询URL，先返回模拟数据
-	result := &models.AIGenerateResult{
-		TaskID: req.TaskID,
-		Status: "completed",
-		URL:    "https://example.com/generated_image.jpg",
+	// 调用Service层查询任务状态
+	result, err := common.GetAIWorkByTaskID(req.TaskID)
+	if err != nil {
+		utils.FailEncrypt(r, err, "获取图片结果失败")
+		return
 	}
 
-	utils.Success(r, result, "获取图片结果成功")
+	// 构造响应数据
+	response := &models.AIGenerateResult{
+		TaskID: result.TaskID,
+		Status: models.GetAiWorkStatusName(result.Status),
+		URL:    "", // 需要从result.Work中解析URL
+	}
+
+	// 如果任务已完成，从work字段中解析URL
+	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+		var work map[string]interface{}
+		if err := json.Unmarshal(result.Work, &work); err == nil {
+			if url, ok := work["url"].(string); ok {
+				response.URL = url
+			}
+		}
+	}
+
+	utils.Success(r, response, "获取图片结果成功")
 }
 
 // ToVideo 生成视频接口
@@ -159,15 +176,31 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 		return
 	}
 
-	// 这里应该根据task_id查询任务状态
-	// 由于没有具体的任务状态查询URL，先返回模拟数据
-	result := &models.AIGenerateResult{
-		TaskID: req.TaskID,
-		Status: "completed",
-		URL:    "https://example.com/generated_video.mp4",
+	// 调用Service层查询任务状态
+	result, err := common.GetAIWorkByTaskID(req.TaskID)
+	if err != nil {
+		utils.FailEncrypt(r, err, "获取视频结果失败")
+		return
 	}
 
-	utils.Success(r, result, "获取视频结果成功")
+	// 构造响应数据
+	response := &models.AIGenerateResult{
+		TaskID: result.TaskID,
+		Status: models.GetAiWorkStatusName(result.Status),
+		URL:    "", // 需要从result.Work中解析URL
+	}
+
+	// 如果任务已完成，从work字段中解析URL
+	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+		var work map[string]interface{}
+		if err := json.Unmarshal(result.Work, &work); err == nil {
+			if url, ok := work["url"].(string); ok {
+				response.URL = url
+			}
+		}
+	}
+
+	utils.Success(r, response, "获取视频结果成功")
 }
 
 // GetAiWorkList 获取AI作品历史记录

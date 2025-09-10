@@ -92,7 +92,7 @@ type CreateAiWorkRes struct {
 
 // 常量定义
 
-// AI工作类型常量
+// AI工作类型常量 - 与PHP版本保持一致
 const (
 	AiWorkTypeText  int8 = 1 // 文本生成
 	AiWorkTypeImage int8 = 2 // 图片生成
