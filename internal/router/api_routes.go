@@ -10,7 +10,7 @@ func InitAPIRoutes(s *ghttp.Server) {
 	// 创建控制器实例
 	userCtrl := &controller.UserController{}
 	productCtrl := &controller.ProductController{}
-	
+
 	// API路由组
 	apiGroup := s.Group("/api")
 	{
@@ -21,7 +21,7 @@ func InitAPIRoutes(s *ghttp.Server) {
 			userGroup.POST("/login", userCtrl.Login)
 			userGroup.GET("/profile", userCtrl.GetProfile)
 		}
-		
+
 		// 产品相关路由
 		productGroup := apiGroup.Group("/product")
 		{
@@ -30,4 +30,7 @@ func InitAPIRoutes(s *ghttp.Server) {
 			productGroup.POST("/create", productCtrl.Create)
 		}
 	}
+
+	// 初始化聊天路由
+	InitChatRoutes(s)
 }

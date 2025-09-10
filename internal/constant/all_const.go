@@ -46,12 +46,6 @@ const (
 	MSG_USER_EXIST     = "用户已存在"
 )
 
-// 数据库表名
-const (
-	TABLE_USER    = "ls_user"
-	TABLE_PRODUCT = "ls_product"
-)
-
 // 分页配置
 const (
 	PAGE_NO   = 1  // 默认页码

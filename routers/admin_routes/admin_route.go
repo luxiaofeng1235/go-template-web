@@ -1,5 +1,5 @@
 /*
- * @file: global.go
+ * @file: admin_route.go
  * @description: 后台路由定义
  * @author: red <513072539@qq.com>
  * @created: 2025-09-01
@@ -48,10 +48,10 @@ func InitRoutes(s *ghttp.Server) {
 			layoutContent := gfile.GetContents("public/admin/components/layout.html")
 			// 读取产品页面内容
 			productContent := gfile.GetContents("public/admin/product/index.html")
-			
+
 			// 将产品内容插入到layout模板中
 			finalContent := gstr.Replace(layoutContent, "{$content|raw}", productContent)
-			
+
 			r.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
 			r.Response.Write(finalContent)
 		})
@@ -63,15 +63,15 @@ func InitRoutes(s *ghttp.Server) {
 		})
 
 		adminGroup.GET("/components/*", func(r *ghttp.Request) {
-			path := "public/admin" + r.URL.Path  
+			path := "public/admin" + r.URL.Path
 			r.Response.ServeFile(path)
 		})
 
-	// admin-frontend静态资源路由
-	s.Group("/admin-frontend").GET("/*", func(r *ghttp.Request) {
-		path := r.URL.Path[1:] // 去掉开头的 /
-		r.Response.ServeFile(path)
-	})
+		// admin-frontend静态资源路由
+		s.Group("/admin-frontend").GET("/*", func(r *ghttp.Request) {
+			path := r.URL.Path[1:] // 去掉开头的 /
+			r.Response.ServeFile(path)
+		})
 
 		g.Log().Info(ctx, "[ADMIN] 注册用户路由...")
 		InitUserRoutes(adminGroup)

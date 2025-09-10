@@ -1,5 +1,5 @@
 /*
- * @file: user_rote.go
+ * @file: user_route.go
  * @description: 用户路由定义
  * @author: red <513072539@qq.com>
  * @created: 2025-09-01

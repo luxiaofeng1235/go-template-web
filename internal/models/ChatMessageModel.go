@@ -52,6 +52,25 @@ type GetMessageDetailReq struct {
 	SecretKey string `form:"secret_key" json:"secret_key" `
 }
 
+// ChatUserListReq 获取聊天用户列表请求（对应chat/getDeviceList）
+type ChatUserListReq struct {
+	AccessKey string `form:"access_key" json:"access_key" v:"required#访问密钥不能为空"`
+	PageNo    int    `form:"page_no" json:"page_no"`
+	PageSize  int    `form:"page_size" json:"page_size"`
+}
+
+// ChatHistoryReq 获取聊天历史请求（对应Chat/getChatHistory）
+type ChatHistoryReq struct {
+	SecretKey   string `form:"secret_key" json:"secret_key" v:"required#密钥不能为空"`
+	UserId      int64  `form:"user_id" json:"user_id" v:"required#用户ID不能为空"`
+	ToUserId    int64  `form:"to_user_id" json:"to_user_id" v:"required#对方用户ID不能为空"`
+	PageNum     int    `form:"page_num" json:"page_num"`
+	PageSize    int    `form:"page_size" json:"page_size"`
+	StartTime   int64  `form:"start_time" json:"start_time"`
+	EndTime     int64  `form:"end_time" json:"end_time"`
+	MessageType int8   `form:"message_type" json:"message_type"`
+}
+
 // 响应结构体
 
 // ChatMessageRes 聊天消息响应
@@ -83,7 +102,39 @@ type MessageListRes struct {
 
 // SendMessageRes 发送消息响应
 type SendMessageRes struct {
-	MessageID string `json:"message_id"`
-	Success   bool   `json:"success"`
-	Timestamp int64  `json:"timestamp"`
+	MessageID   int64  `json:"message_id"`
+	UserId      int64  `json:"user_id"`
+	ToUserId    int64  `json:"to_user_id"`
+	Content     string `json:"content"`
+	MessageType int8   `json:"message_type"`
+	CreateTime  int64  `json:"create_time"`
+}
+
+// ChatUserListRes 聊天用户列表响应（对应chat/getDeviceList）
+type ChatUserListRes struct {
+	DeviceId        string `json:"device_id"`
+	UserId          int64  `json:"user_id"`
+	Username        string `json:"username"`
+	LastMessageTime int64  `json:"last_message_time"`
+	MessageCount    int64  `json:"message_count"`
+	LastMessage     string `json:"last_message"`
+	UnreadCount     int64  `json:"unread_count"`
+}
+
+// ChatHistoryRes 聊天历史响应（对应Chat/getChatHistory）
+type ChatHistoryRes struct {
+	Id          int64  `json:"id"`
+	MessageId   string `json:"message_id"`
+	UserId      int64  `json:"user_id"`
+	ToUserId    int64  `json:"to_user_id"`
+	Username    string `json:"username"`
+	ToUsername  string `json:"to_username"`
+	Content     string `json:"content"`
+	MessageType int8   `json:"message_type"`
+	ImageUrl    string `json:"image_url,omitempty"`
+	VideoUrl    string `json:"video_url,omitempty"`
+	ChatType    int8   `json:"chat_type"`
+	Status      int8   `json:"status"`
+	CreateTime  int64  `json:"create_time"`
+	UpdateTime  int64  `json:"update_time"`
 }
