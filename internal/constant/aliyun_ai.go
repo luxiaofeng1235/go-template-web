@@ -19,6 +19,20 @@ const (
 	ALIYUN_VIDEO_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis"
 )
 
+// AI工作类型常量 - 与PHP版本保持一致
+const (
+	AiWorkTypeImage int8 = 1 // 图片生成
+	AiWorkTypeVideo int8 = 2 // 视频生成
+)
+
+// AI工作状态常量
+const (
+	AiWorkStatusPending    int8 = 0 // 待处理
+	AiWorkStatusProcessing int8 = 1 // 处理中
+	AiWorkStatusCompleted  int8 = 2 // 已完成
+	AiWorkStatusFailed     int8 = 3 // 失败
+)
+
 // AI模型类型常量
 const (
 	AI_MODEL_ASSISTANT = 0 // AI咨询助手
@@ -97,6 +111,6 @@ const (
 // 视频生成相关常量
 const (
 	// 视频生成模型
-	VIDEO_MODEL_I2V_PLUS = "wanx2.1-i2v-plus"  // 图生视频
+	VIDEO_MODEL_I2V_PLUS  = "wanx2.1-i2v-plus"  // 图生视频
 	VIDEO_MODEL_T2V_TURBO = "wanx2.1-t2v-turbo" // 文生视频
 )

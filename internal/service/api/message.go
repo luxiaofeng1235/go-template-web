@@ -44,7 +44,7 @@ func GetChatUserList(req *models.ChatUserListReq) (list []models.SecretKey, tota
 	// 构建查询条件 - 查询SecretKey表获取设备列表，选择指定字段
 	db := global.DB.Model(&models.SecretKey{}).
 		Select("id, device_fingerprint, access_key, nickname, user_note, avtar_url").
-		Where("status = ?", models.SecretKeyStatusNormal)
+		Where("status = ?", constant.SecretKeyStatusNormal)
 
 	// 统计总条数
 	err = db.Count(&total).Error

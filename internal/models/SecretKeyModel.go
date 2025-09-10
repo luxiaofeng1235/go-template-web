@@ -1,5 +1,7 @@
 package models
 
+import "go-web-template/internal/constant"
+
 // SecretKey 用户密钥主模型
 type SecretKey struct {
 	ID                int64  `gorm:"column:id" json:"id"`                                 // ID
@@ -111,23 +113,14 @@ type GroupStatsRes struct {
 	ActiveUsers int64  `json:"active_users"` // 今日活跃用户
 }
 
-// 常量定义
-
-// 用户状态常量
-const (
-	SecretKeyStatusNormal   int8 = 1 // 正常
-	SecretKeyStatusDisabled int8 = 2 // 禁用
-	SecretKeyStatusDeleted  int8 = 3 // 删除
-)
-
 // 获取状态名称
 func GetSecretKeyStatusName(status int8) string {
 	switch status {
-	case SecretKeyStatusNormal:
+	case constant.SecretKeyStatusNormal:
 		return "正常"
-	case SecretKeyStatusDisabled:
+	case constant.SecretKeyStatusDisabled:
 		return "禁用"
-	case SecretKeyStatusDeleted:
+	case constant.SecretKeyStatusDeleted:
 		return "删除"
 	default:
 		return "未知状态"

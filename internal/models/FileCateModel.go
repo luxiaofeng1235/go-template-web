@@ -1,5 +1,7 @@
 package models
 
+import "go-web-template/internal/constant"
+
 // FileCate 文件分类主模型
 type FileCate struct {
 	ID         uint   `gorm:"column:id" json:"id"`                   // ID
@@ -75,38 +77,20 @@ type FileCateRes struct {
 	Children   []FileCateRes `json:"children,omitempty"` // 子分类
 }
 
-// 常量定义
-
-// 文件分类类型常量
-const (
-	FileCateTypeImage    uint8 = 10 // 图片分类
-	FileCateTypeDocument uint8 = 20 // 文档分类
-	FileCateTypeVideo    uint8 = 30 // 视频分类
-	FileCateTypeAudio    uint8 = 40 // 音频分类
-	FileCateTypeArchive  uint8 = 50 // 压缩包分类
-	FileCateTypeOther    uint8 = 60 // 其他分类
-)
-
-// 删除状态常量
-const (
-	FileCateDelNormal  uint8 = 0 // 正常
-	FileCateDelDeleted uint8 = 1 // 删除
-)
-
 // GetFileCateTypeName 获取文件分类类型名称
 func GetFileCateTypeName(cateType uint8) string {
 	switch cateType {
-	case FileCateTypeImage:
+	case constant.FileCateTypeImage:
 		return "图片分类"
-	case FileCateTypeDocument:
+	case constant.FileCateTypeDocument:
 		return "文档分类"
-	case FileCateTypeVideo:
+	case constant.FileCateTypeVideo:
 		return "视频分类"
-	case FileCateTypeAudio:
+	case constant.FileCateTypeAudio:
 		return "音频分类"
-	case FileCateTypeArchive:
+	case constant.FileCateTypeArchive:
 		return "压缩包分类"
-	case FileCateTypeOther:
+	case constant.FileCateTypeOther:
 		return "其他分类"
 	default:
 		return "未知类型"
@@ -116,9 +100,9 @@ func GetFileCateTypeName(cateType uint8) string {
 // GetFileCateDelName 获取文件分类删除状态名称
 func GetFileCateDelName(del uint8) string {
 	switch del {
-	case FileCateDelNormal:
+	case constant.FileCateDelNormal:
 		return "正常"
-	case FileCateDelDeleted:
+	case constant.FileCateDelDeleted:
 		return "已删除"
 	default:
 		return "未知状态"

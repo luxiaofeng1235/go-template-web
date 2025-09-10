@@ -1,5 +1,7 @@
 package models
 
+import "go-web-template/internal/constant"
+
 // UserSession 用户会话主模型
 type UserSession struct {
 	ID               int64  `gorm:"column:id" json:"id"`                                 // ID
@@ -107,23 +109,14 @@ type OnlineStatsRes struct {
 	TodayLogins    int64 `json:"today_logins"`    // 今日登录数
 }
 
-// 常量定义
-
-// 会话状态常量
-const (
-	SessionStatusActive  int8 = 1 // 活跃
-	SessionStatusOffline int8 = 2 // 离线
-	SessionStatusTimeout int8 = 3 // 超时
-)
-
 // 获取状态名称
 func GetSessionStatusName(status int8) string {
 	switch status {
-	case SessionStatusActive:
+	case constant.SessionStatusActive:
 		return "活跃"
-	case SessionStatusOffline:
+	case constant.SessionStatusOffline:
 		return "离线"
-	case SessionStatusTimeout:
+	case constant.SessionStatusTimeout:
 		return "超时"
 	default:
 		return "未知状态"

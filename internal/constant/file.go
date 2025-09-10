@@ -19,10 +19,26 @@ const (
 	FILE_TYPE_OTHER    uint8 = 60 // 其他
 )
 
+// 文件分类类型常量
+const (
+	FileCateTypeImage    uint8 = 10 // 图片分类
+	FileCateTypeDocument uint8 = 20 // 文档分类
+	FileCateTypeVideo    uint8 = 30 // 视频分类
+	FileCateTypeAudio    uint8 = 40 // 音频分类
+	FileCateTypeArchive  uint8 = 50 // 压缩包分类
+	FileCateTypeOther    uint8 = 60 // 其他分类
+)
+
 // 删除状态常量
 const (
 	FILE_DEL_NORMAL  uint8 = 0 // 正常
 	FILE_DEL_DELETED uint8 = 1 // 删除
+)
+
+// 文件分类删除状态常量
+const (
+	FileCateDelNormal  uint8 = 0 // 正常
+	FileCateDelDeleted uint8 = 1 // 删除
 )
 
 // 向后兼容的别名

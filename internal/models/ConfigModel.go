@@ -59,35 +59,3 @@ type ConfigRes struct {
 	CreatedAt  int64  `json:"created_at"`
 	UpdateTime int64  `json:"update_time"`
 }
-
-// 常量定义
-
-// 配置类型常量
-const (
-	ConfigTypeSystem   = "system"   // 系统配置
-	ConfigTypeUser     = "user"     // 用户配置
-	ConfigTypeShop     = "shop"     // 店铺配置
-	ConfigTypeFeature  = "feature"  // 功能配置
-	ConfigTypePayment  = "payment"  // 支付配置
-	ConfigTypeSecurity = "security" // 安全配置
-)
-
-// GetConfigTypeName 获取配置类型名称
-func GetConfigTypeName(configType string) string {
-	switch configType {
-	case ConfigTypeSystem:
-		return "系统配置"
-	case ConfigTypeUser:
-		return "用户配置"
-	case ConfigTypeShop:
-		return "店铺配置"
-	case ConfigTypeFeature:
-		return "功能配置"
-	case ConfigTypePayment:
-		return "支付配置"
-	case ConfigTypeSecurity:
-		return "安全配置"
-	default:
-		return "未知类型"
-	}
-}

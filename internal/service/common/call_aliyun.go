@@ -345,7 +345,7 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 						"n":         n,
 						"watermark": watermark,
 					},
-					Type:       models.AiWorkTypeImage, // 图片生成类型为1
+					Type:       constant.AiWorkTypeImage, // 图片生成类型为1
 					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
 					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
 				})
@@ -423,7 +423,7 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 						"img_url": imgURL,
 						"model":   model,
 					},
-					Type:       models.AiWorkTypeVideo, // 视频生成类型为4
+					Type:       constant.AiWorkTypeVideo, // 视频生成类型为4
 					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
 					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
 				})
@@ -505,7 +505,7 @@ func SaveAIWork(req *models.CreateAiWorkReq) error {
 		TaskID:     req.TaskID,
 		Params:     paramsJSON,
 		Type:       req.Type,
-		Status:     models.AiWorkStatusPending, // 待处理状态
+		Status:     constant.AiWorkStatusPending, // 待处理状态
 		CreateTime: &now,
 		UpdateTime: &now,
 	}
@@ -647,7 +647,7 @@ func GetImageResult(taskID string) (*models.AIImageResult, error) {
 	}
 
 	// 检查任务状态 - 如果已经完成且有work数据，直接返回
-	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+	if result.Status == constant.AiWorkStatusCompleted && len(result.Work) > 0 {
 		var work map[string]interface{}
 		if err := json.Unmarshal(result.Work, &work); err == nil {
 			if url, ok := work["url"].(string); ok {
@@ -688,21 +688,21 @@ func GetImageResult(taskID string) (*models.AIImageResult, error) {
 		if err != nil {
 			// 下载失败，更新状态为失败
 			workData := map[string]interface{}{
-				"error":   err.Error(),
-				"url":     imageURL,
-				"status":  "download_failed",
+				"error":  err.Error(),
+				"url":    imageURL,
+				"status": "download_failed",
 			}
-			UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, workData)
+			UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, workData)
 			return nil, fmt.Errorf("图片下载失败: %v", err)
 		}
 
 		// 下载成功，更新状态为已完成
 		workData := map[string]interface{}{
-			"url":           localImageURL,
-			"original_url":  imageURL,
-			"status":        "completed",
+			"url":          localImageURL,
+			"original_url": imageURL,
+			"status":       "completed",
 		}
-		err = UpdateAIWorkStatus(taskID, models.AiWorkStatusCompleted, workData)
+		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
 		if err != nil {
 			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 		}
@@ -718,14 +718,14 @@ func GetImageResult(taskID string) (*models.AIImageResult, error) {
 		if taskData.Message != "" {
 			errorMsg = taskData.Message
 		}
-		
+
 		// 更新状态为失败
 		workData := map[string]interface{}{
 			"error":  errorMsg,
 			"status": "failed",
 		}
-		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, workData)
-		
+		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, workData)
+
 		return nil, fmt.Errorf(errorMsg)
 
 	case "RUNNING", "PENDING", "SUSPENDED":
@@ -751,7 +751,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 	}
 
 	// 检查任务状态 - 如果已经完成水印处理（状态为已完成且有work数据），直接返回
-	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+	if result.Status == constant.AiWorkStatusCompleted && len(result.Work) > 0 {
 		var work map[string]interface{}
 		if err := json.Unmarshal(result.Work, &work); err == nil {
 			// 检查是否已经有处理好的视频URL
@@ -772,7 +772,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 	}
 
 	// 如果正在处理水印中，返回处理中状态
-	if result.Status == models.AiWorkStatusProcessing {
+	if result.Status == constant.AiWorkStatusProcessing {
 		return nil, fmt.Errorf("水印正在生成中")
 	}
 
@@ -800,7 +800,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 		}
 
 		// 更新状态为处理中（水印处理）
-		err = UpdateAIWorkStatus(taskID, models.AiWorkStatusProcessing, nil)
+		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusProcessing, nil)
 		if err != nil {
 			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 		}
@@ -810,7 +810,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 		if err != nil {
 			global.Errlog.Error("视频水印处理失败", "taskID", taskID, "url", videoURL, "error", err)
 			// 水印处理失败，恢复为已完成状态
-			UpdateAIWorkStatus(taskID, models.AiWorkStatusCompleted, map[string]interface{}{
+			UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, map[string]interface{}{
 				"error": err.Error(),
 			})
 			return nil, fmt.Errorf("水印添加失败: %v", err)
@@ -820,7 +820,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 		workData := map[string]interface{}{
 			"video_urls": []string{watermarkedVideoURL},
 		}
-		err = UpdateAIWorkStatus(taskID, models.AiWorkStatusCompleted, workData)
+		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
 		if err != nil {
 			global.Errlog.Error("更新工作结果失败", "taskID", taskID, "error", err)
 		}
@@ -836,7 +836,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 		}
 
 		// 更新数据库状态为失败
-		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
+		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 			"error": errorMsg,
 		})
 		return nil, fmt.Errorf("视频生成失败: %s", errorMsg)
@@ -870,7 +870,7 @@ func getTaskStatus(taskID string) (*TaskData, error) {
 	}
 
 	// 如果任务状态是已完成(1)，直接返回OK状态
-	if aiWork.Status == models.AiWorkStatusCompleted {
+	if aiWork.Status == constant.AiWorkStatusCompleted {
 		var work map[string]interface{}
 		if len(aiWork.Work) > 0 {
 			json.Unmarshal(aiWork.Work, &work)
@@ -904,7 +904,7 @@ func getTaskStatus(taskID string) (*TaskData, error) {
 	}
 
 	// 如果任务状态是失败(2)，返回FAILED状态
-	if aiWork.Status == models.AiWorkStatusFailed {
+	if aiWork.Status == constant.AiWorkStatusFailed {
 		var work map[string]interface{}
 		errorMsg := "任务失败"
 		if len(aiWork.Work) > 0 {
@@ -975,7 +975,7 @@ func getTaskStatus(taskID string) (*TaskData, error) {
 	// 处理UNKNOWN状态 - 匹配PHP逻辑
 	if apiResponse.Output.TaskStatus == "UNKNOWN" {
 		// 更新数据库状态为失败
-		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
+		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 			"error": "任务不存在",
 		})
 		return &TaskData{
@@ -1020,7 +1020,7 @@ func getImageTaskStatus(taskID string) (*ImageTaskData, error) {
 	}
 
 	// 如果任务状态是已完成(2)，直接返回OK状态
-	if aiWork.Status == models.AiWorkStatusCompleted {
+	if aiWork.Status == constant.AiWorkStatusCompleted {
 		var work map[string]interface{}
 		if len(aiWork.Work) > 0 {
 			json.Unmarshal(aiWork.Work, &work)
@@ -1046,7 +1046,7 @@ func getImageTaskStatus(taskID string) (*ImageTaskData, error) {
 	}
 
 	// 如果任务状态是失败(3)，返回FAILED状态
-	if aiWork.Status == models.AiWorkStatusFailed {
+	if aiWork.Status == constant.AiWorkStatusFailed {
 		var work map[string]interface{}
 		errorMsg := "图片生成失败"
 		if len(aiWork.Work) > 0 {
@@ -1116,7 +1116,7 @@ func getImageTaskStatus(taskID string) (*ImageTaskData, error) {
 	// 处理UNKNOWN状态
 	if apiResponse.Output.TaskStatus == "UNKNOWN" {
 		// 更新数据库状态为失败
-		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
+		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 			"error": "任务不存在",
 		})
 		return &ImageTaskData{
@@ -1179,7 +1179,7 @@ func downloadAndSaveImage(imageURL, taskID string) (string, error) {
 	// 返回相对URL路径
 	localURL := fmt.Sprintf("/uploads/ai_images/%s", filename)
 	global.Requestlog.Info("图片下载成功", "taskID", taskID, "url", localURL)
-	
+
 	return localURL, nil
 }
 
@@ -1220,7 +1220,7 @@ func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRe
 	pageSize := constant.PAGE_SIZE
 
 	// 构建查询条件
-	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{models.AiWorkStatusPending, models.AiWorkStatusProcessing, models.AiWorkStatusCompleted})
+	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{constant.AiWorkStatusPending, constant.AiWorkStatusProcessing, constant.AiWorkStatusCompleted})
 
 	// 类型过滤：当type != 3时，增加类型条件
 	if workType != 3 {

@@ -83,19 +83,3 @@ type CreateAiWorkRes struct {
 	Success   bool       `json:"success"`
 	Timestamp *time.Time `json:"timestamp"`
 }
-
-// 常量定义
-
-// AI工作类型常量 - 与PHP版本保持一致
-const (
-	AiWorkTypeImage int8 = 1 // 图片生成
-	AiWorkTypeVideo int8 = 2 // 视频生成
-)
-
-// AI工作状态常量
-const (
-	AiWorkStatusPending    int8 = 0 // 待处理
-	AiWorkStatusProcessing int8 = 1 // 处理中
-	AiWorkStatusCompleted  int8 = 2 // 已完成
-	AiWorkStatusFailed     int8 = 3 // 失败
-)
