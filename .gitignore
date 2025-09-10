@@ -4,7 +4,7 @@
 .idea/
 .settings/
 .vscode/
-
+docs
 **/.DS_Store
 
 # 构建输出
@@ -29,6 +29,7 @@ coverage.txt
 # 日志文件
 logs/
 *.log
+
 
 # 运行时临时文件
 public/uploads/

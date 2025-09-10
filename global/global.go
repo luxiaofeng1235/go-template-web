@@ -1,7 +1,7 @@
 /*
  * @file: global.go
  * @description: 全局变量定义和管理 - 参考go-novel的global设计模式
- * @author: go-web-template
+ * @author: red
  * @created: 2025-09-09
  * @version: 1.0.0
  * @license: MIT License
@@ -48,11 +48,11 @@ var (
 	Updatelog  *zap.SugaredLogger // 数据更新日志
 
 	// 业务模块专用日志（从go-novel迁移的模块日志）
-	Biquge34log   *zap.SugaredLogger // 笔趣阁34模块日志
-	Paoshu8log    *zap.SugaredLogger // 泡书8模块日志
-	Xswlog        *zap.SugaredLogger // 小说网模块日志
-	Lydlog        *zap.SugaredLogger // 龙腾小说网模块日志
-	Bqg24log      *zap.SugaredLogger // 笔趣阁24模块日志
-	Siluke520log  *zap.SugaredLogger // 丝路客520模块日志
+	Biquge34log  *zap.SugaredLogger // 笔趣阁34模块日志
+	Paoshu8log   *zap.SugaredLogger // 泡书8模块日志
+	Xswlog       *zap.SugaredLogger // 小说网模块日志
+	Lydlog       *zap.SugaredLogger // 龙腾小说网模块日志
+	Bqg24log     *zap.SugaredLogger // 笔趣阁24模块日志
+	Siluke520log *zap.SugaredLogger // 丝路客520模块日志
 
 )
