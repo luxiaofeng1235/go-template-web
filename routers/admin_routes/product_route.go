@@ -9,7 +9,7 @@
 package admin_routes
 
 import (
-	"go-web-template/admin/controller"
+	controller "go-web-template/internal/controller/admin"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 )

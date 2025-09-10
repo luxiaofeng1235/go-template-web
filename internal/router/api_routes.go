@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gogf/gf/v2/net/ghttp"
-	"go-web-template/api/controller"
+	controller "go-web-template/internal/controller/api"
 )
 
 // InitAPIRoutes 初始化API路由（类似go-novel的api_routes.InitApiRoutes）

@@ -1,7 +1,7 @@
 package api_routes
 
 import (
-	"go-web-template/api/controller"
+	controller "go-web-template/internal/controller/api"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 )
