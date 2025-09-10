@@ -225,10 +225,6 @@ func (s *StreamService) callAIServiceWithStream(ctx context.Context, r *ghttp.Re
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		// 如果是模拟模式（API密钥未配置），则使用模拟响应
-		if strings.Contains(config.Headers["Authorization"], "YOUR_API_KEY") {
-			return s.mockStreamResponse(r, chat)
-		}
 		return fmt.Errorf("AI服务返回错误状态码: %d", resp.StatusCode)
 	}
 
@@ -277,32 +273,6 @@ func (s *StreamService) handleStreamResponse(ctx context.Context, r *ghttp.Reque
 	return s.streamClose(r, chat, fullContent)
 }
 
-// mockStreamResponse 模拟流式响应（用于API密钥未配置时）
-func (s *StreamService) mockStreamResponse(r *ghttp.Request, chat *models.AiChatLog) error {
-	words := []string{"这是", "一个", "模拟的", "AI", "流式", "响应", "，", "用于", "测试", "流式", "输出", "功能", "。"}
-	fullContent := ""
-
-	for _, word := range words {
-		// 检查客户端连接
-		select {
-		case <-r.Context().Done():
-			return s.streamClose(r, chat, fullContent)
-		default:
-		}
-
-		fullContent += word
-
-		// 发送数据块
-		data := fmt.Sprintf("data: %s\n\n", word)
-		r.Response.Write([]byte(data))
-		r.Response.Flush()
-
-		// 模拟延迟
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	return s.streamClose(r, chat, fullContent)
-}
 
 // extractContentFromAIResponse 从AI响应中提取文本内容
 func (s *StreamService) extractContentFromAIResponse(data string) string {
