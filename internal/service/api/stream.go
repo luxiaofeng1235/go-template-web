@@ -114,13 +114,13 @@ func (s *StreamService) getChatLog(ctx context.Context, chatID int64, userID str
 	}
 
 	// 创建新的聊天记录 - 按照PHP逻辑创建新记录
-	now := time.Now().Unix()
+	now := time.Now()
 	chat = models.AiChatLog{
 		UserID:     userID,
 		ModelID:    modelID,
 		Chat:       datatypes.JSON("[]"), // 对应PHP的 $chat->chat = '[]';
-		CreateTime: now,
-		UpdateTime: now,
+		CreateTime: &now,
+		UpdateTime: &now,
 	}
 
 	err := global.DB.WithContext(ctx).Create(&chat).Error
@@ -329,8 +329,25 @@ func (s *StreamService) extractContentFromAIResponse(data string) string {
 
 // streamClose 关闭流并保存聊天记录 - 对应PHP的streamClose()
 func (s *StreamService) streamClose(r *ghttp.Request, chat *models.AiChatLog, content string) error {
-	// 更新聊天记录 - 注意：AiChatLog模型没有Content和Status字段，需要更新UpdateTime
-	chat.UpdateTime = time.Now().Unix()
+	// 更新聊天记录，添加AI回复到聊天历史
+	if content != "" {
+		var historyMessages []AIMessage
+		if len(chat.Chat) > 0 && string(chat.Chat) != "[]" {
+			json.Unmarshal(chat.Chat, &historyMessages)
+		}
+
+		// 添加AI回复到历史
+		historyMessages = append(historyMessages, AIMessage{
+			Role:    "assistant",
+			Content: content,
+		})
+
+		chatJSON, _ := json.Marshal(historyMessages)
+		chat.Chat = datatypes.JSON(chatJSON)
+	}
+
+	now := time.Now()
+	chat.UpdateTime = &now
 
 	err := global.DB.Save(chat).Error
 	if err != nil {

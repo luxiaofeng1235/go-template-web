@@ -1,8 +1,9 @@
 package models
 
 import (
-	"gorm.io/datatypes"
 	"time"
+
+	"gorm.io/datatypes"
 )
 
 // AiWork AI工作任务主模型
@@ -14,8 +15,8 @@ type AiWork struct {
 	Work       datatypes.JSON `gorm:"column:work" json:"work"`               // 工作内容
 	Type       int8           `gorm:"column:type" json:"type"`               // 类型：1文本生成 2图片生成 3音频生成 4视频生成
 	Status     int8           `gorm:"column:status" json:"status"`           // 状态：0待处理 1处理中 2已完成 3失败
-	CreateTime time.Time      `gorm:"column:create_time" json:"create_time"` // 创建时间
-	UpdateTime time.Time      `gorm:"column:update_time" json:"update_time"` // 更新时间
+	CreateTime *time.Time     `gorm:"column:create_time" json:"create_time"` // 创建时间
+	UpdateTime *time.Time     `gorm:"column:update_time" json:"update_time"` // 更新时间
 }
 
 func (*AiWork) TableName() string {
@@ -30,8 +31,8 @@ type CreateAiWorkReq struct {
 	TaskID     string                 `form:"task_id" json:"task_id"`
 	Params     map[string]interface{} `form:"params" json:"params" `
 	Type       int8                   `form:"type" json:"type" `
-	CreateTime time.Time              `form:"create_time" json:"create_time"` // 创建时间
-	UpdateTime time.Time              `form:"update_time" json:"update_time"` // 更新时间
+	CreateTime *time.Time             `form:"create_time" json:"create_time"` // 创建时间
+	UpdateTime *time.Time             `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // UpdateAiWorkReq 更新AI工作任务请求
@@ -87,10 +88,8 @@ type CreateAiWorkRes struct {
 
 // AI工作类型常量 - 与PHP版本保持一致
 const (
-	AiWorkTypeText  int8 = 1 // 文本生成
-	AiWorkTypeImage int8 = 2 // 图片生成
-	AiWorkTypeAudio int8 = 3 // 音频生成
-	AiWorkTypeVideo int8 = 4 // 视频生成
+	AiWorkTypeImage int8 = 1 // 图片生成
+	AiWorkTypeVideo int8 = 2 // 视频生成
 )
 
 // AI工作状态常量
@@ -100,35 +99,3 @@ const (
 	AiWorkStatusCompleted  int8 = 2 // 已完成
 	AiWorkStatusFailed     int8 = 3 // 失败
 )
-
-// 获取类型名称
-func GetAiWorkTypeName(workType int8) string {
-	switch workType {
-	case AiWorkTypeText:
-		return "文本生成"
-	case AiWorkTypeImage:
-		return "图片生成"
-	case AiWorkTypeAudio:
-		return "音频生成"
-	case AiWorkTypeVideo:
-		return "视频生成"
-	default:
-		return "未知类型"
-	}
-}
-
-// 获取状态名称
-func GetAiWorkStatusName(status int8) string {
-	switch status {
-	case AiWorkStatusPending:
-		return "待处理"
-	case AiWorkStatusProcessing:
-		return "处理中"
-	case AiWorkStatusCompleted:
-		return "已完成"
-	case AiWorkStatusFailed:
-		return "失败"
-	default:
-		return "未知状态"
-	}
-}
