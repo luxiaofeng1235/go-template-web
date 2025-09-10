@@ -61,26 +61,19 @@ type GetAiWorkDetailReq struct {
 
 // AiWorkRes AI工作任务响应
 type AiWorkRes struct {
-	ID         int64                  `json:"id"`
-	UserID     string                 `json:"user_id"`
-	TaskID     string                 `json:"task_id"`
-	Params     map[string]interface{} `json:"params"`
-	Work       map[string]interface{} `json:"work,omitempty"`
-	Type       int8                   `json:"type"`
-	TypeName   string                 `json:"type_name"`
-	Status     int8                   `json:"status"`
-	StatusName string                 `json:"status_name"`
-	CreateTime time.Time              `json:"create_time"`
-	UpdateTime time.Time              `json:"update_time"`
+	TaskID string                 `json:"task_id"`
+	Params map[string]interface{} `json:"params"`
+	Type   int8                   `json:"type"`
+	Status int8                   `json:"status"`
+	Work   interface{}            `json:"work"`
 }
 
 // AiWorkListRes AI工作任务列表响应
 type AiWorkListRes struct {
-	Works    []AiWorkRes `json:"works"`
-	Total    int64       `json:"total"`
-	Page     int         `json:"page"`
-	PageSize int         `json:"page_size"`
-	HasMore  bool        `json:"has_more"`
+	Page      string      `json:"page"`
+	PageCount int         `json:"page_count"`
+	Total     int64       `json:"total"`
+	List      []AiWorkRes `json:"list"`
 }
 
 // CreateAiWorkRes 创建AI工作任务响应
