@@ -2,10 +2,11 @@ package constant
 
 // HTTP状态码
 const (
-	SUCCESS_CODE = 1   // 成功
-	ERROR_CODE   = 0   // 服务器错误
-	AUTH_ERROR   = 401 // 认证失败
-	PARAM_ERROR  = 400 // 参数错误
+	SUCCESS_CODE     = 1   // 成功
+	SUCCESS_CODE_200 = 1   //默认200的返回值（预留）
+	ERROR_CODE       = 0   // 服务器错误
+	AUTH_ERROR       = 401 // 认证失败
+	PARAM_ERROR      = 400 // 参数错误
 )
 
 // 用户状态

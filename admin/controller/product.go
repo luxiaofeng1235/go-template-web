@@ -9,6 +9,7 @@
 package controller
 
 import (
+	"fmt"
 	"go-web-template/internal/models"
 	"go-web-template/internal/service/admin"
 	"go-web-template/utils"
@@ -23,14 +24,14 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 	// 解析请求参数
 	var req models.ProductListReq
 	if err := r.Parse(&req); err != nil {
-		utils.ParamError(r, "参数解析错误")
+		utils.FailEncrypt(r, err, "参数解析错误")
 		return
 	}
 
 	// 调用Service层处理业务逻辑
 	list, total, err := admin.GetProductList(&req)
 	if err != nil {
-		utils.Fail(r, err, "获取商品列表失败")
+		utils.FailEncrypt(r, err, "获取商品列表失败")
 		return
 	}
 
@@ -50,7 +51,7 @@ func (c *ProductController) GetCategoryList(r *ghttp.Request) {
 	// 调用Service层处理业务逻辑
 	categories, err := admin.GetCategoryList()
 	if err != nil {
-		utils.Fail(r, err, "获取分类列表失败")
+		utils.FailEncrypt(r, err, "获取分类列表失败")
 		return
 	}
 
@@ -68,14 +69,14 @@ func (c *ProductController) SaveProduct(r *ghttp.Request) {
 	// 解析请求参数
 	var req models.SaveProductReq
 	if err := r.Parse(&req); err != nil {
-		utils.ParamError(r, "参数解析错误")
+		utils.FailEncrypt(r, err, "参数解析错误")
 		return
 	}
 
 	// 调用Service层处理业务逻辑
 	result, err := admin.SaveProduct(&req)
 	if err != nil {
-		utils.Fail(r, err, "保存商品失败")
+		utils.FailEncrypt(r, err, "保存商品失败")
 		return
 	}
 
@@ -87,14 +88,14 @@ func (c *ProductController) DeleteProduct(r *ghttp.Request) {
 	// 获取商品ID参数
 	productID := r.Get("id").Int64()
 	if productID <= 0 {
-		utils.ParamError(r, "商品ID不能为空")
+		utils.FailEncrypt(r, fmt.Errorf("商品ID不能为空"), "商品ID不能为空")
 		return
 	}
 
 	// 调用Service层处理业务逻辑
 	err := admin.DeleteProduct(productID)
 	if err != nil {
-		utils.Fail(r, err, "删除商品失败")
+		utils.FailEncrypt(r, err, "删除商品失败")
 		return
 	}
 
