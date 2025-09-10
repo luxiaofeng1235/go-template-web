@@ -10,7 +10,6 @@ import (
 	"go-web-template/routers/admin_routes"
 	"go-web-template/routers/api_routes"
 	"log"
-	"sync"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -27,8 +26,6 @@ func StartAPIServer() {
 	InitDB()
 	InitZapLog()
 	InitRedis()
-	// InitNsq() // Temporarily disabled as not needed
-	InitKeyLock()
 	InitWs()
 	InitGeoReader()
 	InitBigcache()
@@ -49,8 +46,6 @@ func StartAdminServer() {
 	InitDB()
 	InitZapLog()
 	InitRedis()
-	// InitNsq() // Temporarily disabled as not needed
-	InitKeyLock()
 	InitGeoReader()
 	InitBigcache()
 
@@ -134,24 +129,6 @@ func InitZapLog() {
 
 // ========== 通信相关 ==========
 
-// InitNsq 初始化NSQ消息队列
-func InitNsq() {
-	// 这里可以根据配置初始化NSQ Producer
-	// 目前先设置为nil，后续根据需要配置
-	global.NsqPro = nil
-
-	// g.Log().Info(ctx, "NSQ消息队列初始化完成") // Temporarily disabled
-}
-
-// InitKeyLock 初始化分布式锁
-func InitKeyLock() {
-	var ctx = gctx.New()
-
-	// 使用sync.Mutex作为简单的锁机制
-	global.KeyLock = &sync.Mutex{}
-
-	g.Log().Info(ctx, "分布式锁初始化完成（使用sync.Mutex）")
-}
 
 // InitWs 初始化WebSocket（API服务专用）
 func InitWs() {
