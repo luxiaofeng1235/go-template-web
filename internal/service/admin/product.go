@@ -14,6 +14,7 @@ import (
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
 	"go-web-template/utils"
+	"strings"
 )
 
 // GetProductList 获取商品列表 - 后台管理专用
@@ -123,14 +124,20 @@ func getCategoryName(cateID int) string {
 // @return result *models.SaveProductRes 保存结果数据
 // @return err error 错误信息
 func SaveProduct(req *models.SaveProductReq) (result *models.SaveProductRes, err error) {
+	// 字段预处理 - 使用strings.TrimSpace处理字符串字段
+	productName := strings.TrimSpace(req.ProductName)
+	intro := strings.TrimSpace(req.Intro)
+	logo := strings.TrimSpace(req.Logo)
+	qrcode := strings.TrimSpace(req.QRCode)
+
 	// 基本参数验证
-	if req.ProductName == "" {
+	if productName == "" {
 		err = fmt.Errorf("产品名称必须输入")
 		return
 	}
 
 	// 检查商品名称是否重复
-	query := global.DB.Where("product_name = ?", req.ProductName)
+	query := global.DB.Where("product_name = ?", productName)
 	if req.ID > 0 {
 		query = query.Where("id != ?", req.ID)
 	}
@@ -157,11 +164,11 @@ func SaveProduct(req *models.SaveProductReq) (result *models.SaveProductRes, err
 	if req.ID > 0 {
 		// 编辑操作
 		updates := map[string]interface{}{
-			"product_name": req.ProductName,
+			"product_name": productName,
 			"cate_id":      req.CateID,
-			"intro":        req.Intro,
-			"logo":         req.Logo,
-			"qrcode":       req.QRCode,
+			"intro":        intro,
+			"logo":         logo,
+			"qrcode":       qrcode,
 			"updated_at":   now,
 		}
 
@@ -173,7 +180,7 @@ func SaveProduct(req *models.SaveProductReq) (result *models.SaveProductRes, err
 
 		result = &models.SaveProductRes{
 			ID:          req.ID,
-			ProductName: req.ProductName,
+			ProductName: productName,
 			CateID:      req.CateID,
 			CreatedAt:   0, // 编辑时不返回创建时间
 			UpdatedAt:   now,
@@ -181,11 +188,11 @@ func SaveProduct(req *models.SaveProductReq) (result *models.SaveProductRes, err
 	} else {
 		// 新增操作
 		product := models.Product{
-			ProductName: req.ProductName,
+			ProductName: productName,
 			CateID:      req.CateID,
-			Intro:       req.Intro,
-			Logo:        req.Logo,
-			QRCode:      req.QRCode,
+			Intro:       intro,
+			Logo:        logo,
+			QRCode:      qrcode,
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		}
