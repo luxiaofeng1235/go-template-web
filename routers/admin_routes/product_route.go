@@ -17,6 +17,7 @@ import (
 // InitProductRoutes 初始化管理后台商品路由
 func InitProductRoutes(adminGroup *ghttp.RouterGroup) {
 	productController := &controller.ProductController{}
+	fileController := &controller.FileController{}
 
 	// 商品管理路由组
 	productGroup := adminGroup.Group("/product")
@@ -25,5 +26,7 @@ func InitProductRoutes(adminGroup *ghttp.RouterGroup) {
 		productGroup.GET("/getCategoryList", productController.GetCategoryList)
 		productGroup.POST("/saveProduct", productController.SaveProduct)
 		productGroup.POST("/deleteProduct", productController.DeleteProduct)
+		// 图片上传路由
+		productGroup.POST("/formImage", fileController.FormImage)
 	}
 }

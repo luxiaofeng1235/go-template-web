@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI大平台-管理系统</title>
+    <script src="/admin-frontend/assets/js/vue.global.js"></script>
+    <script src="/admin-frontend/assets/js/element-plus.full.js"></script>
+    <script src="/admin-frontend/assets/js/axios.min.js"></script>
+    <link rel="stylesheet" href="/admin-frontend/assets/css/element-plus.css" />
+    
+    <style>
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif; 
+        }
+        .admin-container { 
+            min-height: 100vh; 
+        }
+        .admin-header {
+            background-color: #545c64;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .admin-sidebar {
+            background-color: #f5f5f5;
+            border-right: 1px solid #e6e6e6;
+        }
+        .stat-card {
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .stat-number {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #409eff;
+        }
+        .dialog-footer {
+            text-align: right;
+        }
+        
+        .image-slot {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+            height: 200px;
+            background: #f5f7fa;
+            color: #909399;
+        }
+        
+        .image-slot .el-icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+        
+        /* 上传样式 - 重新设计 */
+        .logo-uploader .el-upload {
+            border: 1px dashed #d9d9d9 !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            position: relative !important;
+            overflow: hidden !important;
+            transition: all 0.3s !important;
+            width: 150px !important;
+            height: 150px !important;
+            display: block !important;
+            padding: 0 !important;
+        }
+        .logo-uploader .el-upload:hover {
+            border-color: #409EFF !important;
+        }
+        .logo-uploading {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #409EFF;
+        }
+        .logo-image {
+            width: 150px !important;
+            height: 150px !important;
+            display: block !important;
+            object-fit: cover !important;
+            border-radius: 4px !important;
+        }
+        
+        /* 修复表格按钮对齐 */
+        .el-table .el-table__body .el-button {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .el-table .el-table__body .el-button:last-child {
+            margin-right: 0;
+        }
+        
+        /* 修复弹窗表单样式冲突 */
+        .el-dialog .el-form-item .el-input,
+        .el-dialog .el-form-item .el-select,
+        .el-dialog .el-form-item .el-textarea {
+            width: 100%;
+        }
+        .el-dialog .el-form-item .el-input__inner,
+        .el-dialog .el-form-item .el-textarea__inner {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .el-dialog .el-select .el-input {
+            width: 100%;
+        }
+        .logo-placeholder {
+            color: #8c939d;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            width: 100%;
+            height: 100%;
+        }
+        .logo-placeholder .el-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .logo-placeholder div {
+            font-size: 12px;
+            line-height: normal;
+        }
+        .logo-uploading {
+            color: #409EFF;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .logo-image {
+            width: 178px;
+            height: 178px;
+            display: block;
+            object-fit: cover;
+        }
+        
+        /* 隐藏分页组件中的/page文字 */
+        .el-pagination__sizes .el-select-dropdown__item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .el-pagination__sizes .el-select-dropdown__item::after {
+            content: '';
+        }
+        
+        /* 重写选项内容，只显示数字 */
+        .el-select-dropdown__item[data-value="10"]::before { content: "10"; }
+        .el-select-dropdown__item[data-value="20"]::before { content: "20"; }
+        .el-select-dropdown__item[data-value="50"]::before { content: "50"; }
+        .el-select-dropdown__item[data-value="100"]::before { content: "100"; }
+        
+        /* 上传加载状态样式 */
+        .upload-loading-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #409EFF;
+        }
+        
+        .upload-loading-icon {
+            margin-bottom: 8px;
+            animation: rotating 1s linear infinite;
+        }
+        
+        .upload-progress-text {
+            font-size: 12px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        .upload-dots {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .upload-dots .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #409EFF;
+            animation: loadingDots 1.4s ease-in-out infinite both;
+        }
+        
+        .upload-dots .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .upload-dots .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        .upload-dots .dot:nth-child(3) {
+            animation-delay: 0s;
+        }
+        
+        @keyframes rotating {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes loadingDots {
+            0%, 80%, 100% {
+                transform: scale(0.6);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-container class="admin-container">
+            <!-- 顶部导航栏 -->
+            <el-header class="admin-header">
+                <h3 style="margin: 0;">AI大平台-后台管理系统</h3>
+            </el-header>
+            <el-container>
+                <!-- 侧边栏导航 -->
+                <el-aside width="200px" class="admin-sidebar">
+                    <el-menu 
+                        :default-active="currentMenu" 
+                        @select="selectMenu"
+                        :collapse="false">
+                        <el-menu-item index="dashboard">
+                            <el-icon><House /></el-icon>
+                            <span>仪表盘</span>
+                        </el-menu-item>
+                        <el-menu-item index="products">
+                            <el-icon><Goods /></el-icon>
+                            <span>产品管理</span>
+                        </el-menu-item>
+                        <!-- 未来可扩展的菜单项 -->
+                        <!-- 
+                        <el-menu-item index="users">
+                            <el-icon><User /></el-icon>
+                            <span>用户管理</span>
+                        </el-menu-item>
+                        <el-menu-item index="comments">
+                            <el-icon><ChatDotRound /></el-icon>
+                            <span>评论管理</span>
+                        </el-menu-item>
+                        -->
+                    </el-menu>
+                </el-aside>
+                
+                <!-- 主要内容区域 -->
+                <el-main style="padding: 20px;">
+                    <!-- 仪表盘 -->
+                    <div v-if="currentMenu === 'dashboard'">
+                        <h2>仪表盘</h2>
+                        <el-row :gutter="20">
+                            <el-col :span="6">
+                                <el-card>
+                                    <div class="stat-card">
+                                        <h3>产品总数</h3>
+                                        <p class="stat-number">{{ stats.products }}</p>
+                                    </div>
+                                </el-card>
+                            </el-col>
+                        </el-row>
+                    </div>
+                    
+                    <!-- 页面内容区域 - 显示具体页面的内容 -->
+                    <div v-show="currentMenu !== 'dashboard'">
+                        {$content|raw}
+                    </div>
+                </el-main>
+            </el-container>
+        </el-container>
+        
+        <!-- 页面级弹窗内容插槽 -->
+        <div id="page-dialogs">
+            <!-- 页面特定的弹窗由各页面自己提供 -->
+        </div>
+    </div>
+    
+    <!-- 基础Vue应用和方法 -->
+    <script>
+        const { createApp } = Vue;
+        const { ElMessage, ElMessageBox } = ElementPlus;
+        
+        // 基础应用配置
+        const baseAppConfig = {
+            data() {
+                return {
+                    currentMenu: "dashboard",
+                    loading: false,
+                    stats: {
+                        products: 0
+                    },
+                    // 分页相关
+                    pagination: {
+                        total: 0,
+                        currentPage: 1,
+                        pageSize: 20
+                    },
+                }
+            },
+            methods: {
+                selectMenu(index) {
+                    this.currentMenu = index;
+                    // 根据菜单类型调用对应的加载方法
+                    switch(index) {
+                        case 'products':
+                            if (this.loadProducts) {
+                                this.loadProducts();
+                            }
+                            break;
+                        case 'users':
+                            if (this.loadUsers) {
+                                this.loadUsers();
+                            }
+                            break;
+                        case 'comments':
+                            if (this.loadComments) {
+                                this.loadComments();
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                },
+                
+                formatTime(timestamp) {
+                    if (!timestamp || timestamp === 0) return '未知';
+                    
+                    // 检查时间戳长度，如果是10位则乘以1000转换为毫秒
+                    const ts = timestamp.toString().length === 10 ? timestamp * 1000 : timestamp;
+                    const date = new Date(ts);
+                    
+                    // 检查日期是否有效
+                    if (isNaN(date.getTime())) return '格式错误';
+                    
+                    return date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                },
+                
+                // 分页事件处理
+                handleSizeChange(val) {
+                    this.pagination.pageSize = val;
+                    this.pagination.currentPage = 1;
+                    if (this.loadProducts) {
+                        this.loadProducts(1);
+                    }
+                    this.$nextTick(() => {
+                        this.fixPaginationText();
+                    });
+                },
+                
+                handleCurrentChange(val) {
+                    this.pagination.currentPage = val;
+                    if (this.loadProducts) {
+                        this.loadProducts(val);
+                    }
+                },
+                
+                fixPaginationText() {
+                    // 修改分页下拉选项文字，移除/page
+                    setTimeout(() => {
+                        const selectItems = document.querySelectorAll('.el-pagination__sizes .el-select-dropdown__item');
+                        selectItems.forEach(item => {
+                            const text = item.textContent;
+                            if (text.includes('/page')) {
+                                item.textContent = text.replace('/page', '');
+                            }
+                        });
+                    }, 100);
+                },
+                
+            },
+            
+            mounted() {
+                // 修改分页组件中的/page文字
+                this.$nextTick(() => {
+                    this.fixPaginationText();
+                });
+            },
+            
+            updated() {
+                // 每次更新后也修复文字
+                this.$nextTick(() => {
+                    this.fixPaginationText();
+                });
+            }
+        };
+        
+        // 如果页面定义了扩展配置，则合并；否则使用基础配置
+        const finalAppConfig = window.pageAppConfig ? 
+            Object.assign({}, baseAppConfig, {
+                data() {
+                    return Object.assign({}, baseAppConfig.data(), window.pageAppConfig.data ? window.pageAppConfig.data() : {});
+                },
+                methods: Object.assign({}, baseAppConfig.methods, window.pageAppConfig.methods || {}),
+                mounted() {
+                    baseAppConfig.mounted.call(this);
+                    if (window.pageAppConfig.mounted) {
+                        window.pageAppConfig.mounted.call(this);
+                    }
+                },
+                updated() {
+                    baseAppConfig.updated.call(this);
+                    if (window.pageAppConfig.updated) {
+                        window.pageAppConfig.updated.call(this);
+                    }
+                }
+            }) : baseAppConfig;
+        
+        createApp(finalAppConfig).use(ElementPlus).mount("#app");
+    </script>
+</body>
+</html>

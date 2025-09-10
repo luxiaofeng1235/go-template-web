@@ -1,0 +1,14 @@
+<!-- 仪表盘内容组件 -->
+<div v-if="currentMenu === 'dashboard'">
+    <h2>仪表盘</h2>
+    <el-row :gutter="20">
+        <el-col :span="6">
+            <el-card>
+                <div class="stat-card">
+                    <h3>产品总数</h3>
+                    <p class="stat-number">{{ stats.products }}</p>
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+</div>

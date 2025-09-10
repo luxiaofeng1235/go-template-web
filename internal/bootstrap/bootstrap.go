@@ -92,6 +92,11 @@ func InitDB() {
 		return
 	}
 	
+	// 设置连接字符集为UTF8MB4
+	if err := gormDB.Exec("SET NAMES utf8mb4").Error; err != nil {
+		g.Log().Warning(ctx, "设置数据库字符集失败:", err)
+	}
+	
 	// 设置全局GORM数据库实例
 	global.DB = gormDB
 	g.Log().Info(ctx, "GORM数据库初始化成功")

@@ -1,0 +1,404 @@
+<!-- 产品管理页面内容 -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>产品管理</h2>
+    <div>
+        <el-button type="danger" @click="addProduct">添加产品</el-button>
+        <el-button type="primary" @click="loadProducts">刷新列表</el-button>
+    </div>
+</div>
+
+<el-table :data="products" v-loading="loading" style="width: 100%;" size="small">
+    <el-table-column prop="id" label="ID" min-width="80"></el-table-column>
+    <el-table-column prop="product_name" label="产品名称" min-width="150"></el-table-column>
+     <el-table-column prop="cate_name" label="所属分类" min-width="150"></el-table-column>
+    <el-table-column prop="intro" label="企业介绍" min-width="200" show-overflow-tooltip>
+        <template #default="scope">
+            <span :title="scope.row.intro">
+                {{ scope.row.intro && scope.row.intro.length > 20 ? scope.row.intro.substring(0, 20) + '...' : (scope.row.intro || '暂无介绍') }}
+            </span>
+        </template>
+    </el-table-column>
+    <el-table-column prop="logo" label="产品Logo" min-width="120" align="center">
+        <template #default="scope">
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                <el-image 
+                    v-if="scope.row.logo" 
+                    :src="scope.row.logo" 
+                    style="width: 30px; height: 30px;"
+                    fit="cover"
+                    :preview-src-list="[scope.row.logo]"
+                    preview-teleported>
+                </el-image>
+                <span v-else style="font-size: 12px; color: #999;">无图片</span>
+            </div>
+        </template>
+    </el-table-column>
+    <el-table-column prop="created_at" label="创建时间" min-width="150">
+        <template #default="scope">
+            {{ formatTime(scope.row.created_at) }}
+        </template>
+    </el-table-column>
+    <el-table-column label="操作" min-width="140" fixed="right">
+        <template #default="scope">
+            <el-button size="small" type="success" @click="editProduct(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="deleteProduct(scope.row)">删除</el-button>
+        </template>
+    </el-table-column>
+</el-table>
+
+<!-- 分页组件 -->
+<div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-size: 14px; color: #606266;">
+        共 {{ pagination.total }} 条记录
+    </span>
+    <el-pagination
+        v-model:current-page="pagination.currentPage"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pagination.total"
+        layout="sizes, prev, pager, next"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :prev-text="'上一页'"
+        :next-text="'下一页'"
+        :pager-count="7"
+        :small="false">
+    </el-pagination>
+</div>
+
+<!-- 编辑产品弹窗 -->
+<el-dialog v-model="editDialog.visible" :title="editDialog.isAdd ? '添加产品' : '编辑产品'" width="600px" @close="resetEditForm">
+    <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px">
+        <el-form-item label="产品名称" prop="product_name">
+            <el-input v-model="editForm.product_name" placeholder="请输入产品名称"></el-input>
+        </el-form-item>
+
+         <el-form-item label="所属分类" prop="cate_id">
+            <el-select v-model="editForm.cate_id" placeholder="请选择分类">
+                <el-option
+                  v-for="item in options"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value">
+                </el-option>
+              </el-select>
+        </el-form-item>
+
+        <el-form-item label="企业介绍" prop="intro">
+            <el-input 
+                v-model="editForm.intro" 
+                type="textarea" 
+                :rows="8" 
+                placeholder="请输入企业介绍">
+            </el-input>
+        </el-form-item>
+
+         <el-form-item label="客服二维码" prop="qrcode">
+            <el-input v-model="editForm.qrcode" placeholder="请输入二维码地址"></el-input>
+        </el-form-item>
+
+        <el-form-item label="产品Logo" prop="logo">
+            <el-input 
+                v-model="editForm.logo" 
+                placeholder="请输入Logo图片地址或上传图片">
+            </el-input>
+            <!-- 简单的上传区域 -->
+            <div style="margin-top: 15px;">
+                <el-upload
+                    class="logo-uploader"
+                    action="/admin/product/formImage"
+                    name="file"
+                    :show-file-list="false"
+                    :before-upload="beforeLogoUpload"
+                    :on-success="handleLogoSuccess"
+                    :on-error="handleUploadError"
+                    accept="image/*">
+                    <img v-if="editForm.logo && !logoUploading" :src="getImageUrl(editForm.logo)" class="logo-image">
+                    <div v-else-if="logoUploading" class="logo-uploading">
+                        <div class="upload-loading-wrapper">
+                            <el-icon class="is-loading upload-loading-icon" size="24"><Loading /></el-icon>
+                            <div class="upload-progress-text">正在上传</div>
+                            <div class="upload-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <img v-else src="/admin-frontend/assets/images/upload-style.png" class="logo-image" style="opacity: 0.8;">
+                </el-upload>
+            </div>
+        </el-form-item>
+    </el-form>
+    <template #footer>
+        <div class="dialog-footer">
+            <el-button @click="editDialog.visible = false">取消</el-button>
+            <el-button type="primary" @click="saveProduct" :loading="editDialog.loading">保存</el-button>
+        </div>
+    </template>
+</el-dialog>
+
+<!-- 图片预览弹窗 -->
+<el-dialog v-model="imagePreview.visible" title="图片预览" width="500px">
+    <div style="text-align: center;">
+        <el-image 
+            :src="imagePreview.url" 
+            style="max-width: 100%; max-height: 400px;"
+            fit="contain">
+            <template #error>
+                <div class="image-slot">
+                    <el-icon><Picture /></el-icon>
+                    <div>图片加载失败</div>
+                </div>
+            </template>
+        </el-image>
+    </div>
+</el-dialog>
+
+<script>
+// 产品管理页面的业务逻辑
+window.pageAppConfig = {
+    data() {
+        return {
+            currentMenu: "products",
+            products: [],
+            options:[],
+            // 编辑弹窗相关
+            editDialog: {
+                visible: false,
+                loading: false,
+                isAdd: false
+            },
+            editForm: {
+                id: null,
+                product_name: '',
+                intro: '',
+                logo: '',
+                qrcode: '',
+                cate_id: '',
+                qrcode:'',
+            },
+            editRules: {
+                product_name: [
+                    { required: true, message: '请输入产品名称11', trigger: 'blur' }
+                ],
+                cate_id: [
+                    { required: true, message: '请选择分类', trigger: 'change' },
+                    { validator: (rule, value, callback) => {
+                        if (value === 0 || value === '0' || value === '' || value === null || value === undefined) {
+                            callback(new Error('请选择分类'));
+                        } else {
+                            callback();
+                        }
+                    }, trigger: 'change' }
+                ]
+            },
+            // 图片预览
+            imagePreview: {
+                visible: false,
+                url: ''
+            },
+            // 上传相关
+            logoUploading: false
+        }
+    },
+    
+    methods: {
+        // 获取完整的图片URL
+        getImageUrl(url) {
+            if (!url) return '';
+            // 如果已经是完整URL，直接返回
+            if (url.indexOf('http://') === 0 || url.indexOf('https://') === 0) {
+                return url;
+            }
+            // 否则拼接当前域名（相对路径已经带斜杠开头）
+            return window.location.origin + url;
+        },
+        
+        async loadProducts(page = 1) {
+            this.loading = true;
+            try {
+                const params = {
+                    page_no: page,
+                    page_size: this.pagination.pageSize
+                };
+
+                //获取分类信息
+                const catelist = await axios.get("/admin/product/getCategoryList",{});
+                console.log('catelist Data : ',catelist);
+                if(catelist.data && catelist.data.code == 1){
+                    console.log("111111111111111",catelist.data.data);
+                    this.options = catelist.data.data; // 直接赋值，结构完全匹配
+                }else{
+                    this.options = [];
+                    ElMessage.warning('获取分类失败：' + (catelist.data?.msg || '未知错误'));
+                }
+
+                const response = await axios.get("/admin/product/getProductList", { params });
+                console.log('Products response:', response.data);
+
+                
+                if (response.data && response.data.code === 1) {
+                    const data = response.data.data;
+                    this.products = data.list || [];
+                    this.pagination.total = data.total || 0;
+                    this.pagination.currentPage = data.page_no || 1;
+                    this.stats.products = data.total || 0;
+                } else {
+                    this.products = [];
+                    this.pagination.total = 0;
+                }
+                
+                ElMessage.success("产品列表加载成功");
+            } catch (error) {
+                console.error("加载产品列表失败:", error);
+                ElMessage.error("加载产品列表失败：" + (error.response?.data?.msg || error.message));
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        addProduct() {
+            this.resetEditForm();
+            this.editDialog.isAdd = true;
+            this.editDialog.visible = true;
+        },
+        
+        editProduct(product) {
+            this.editForm = {
+                id: product.id,
+                product_name: product.product_name,
+                intro: product.intro || '',
+                logo: product.logo || '',
+                qrcode: product.qrcode || '',
+                cate_id:product.cate_id ,
+            };
+            
+            // 如果logo是完整URL，需要转换回相对路径用于编辑
+            if (this.editForm.logo && (this.editForm.logo.indexOf('http://') === 0 || this.editForm.logo.indexOf('https://') === 0)) {
+                // 提取相对路径部分
+                const urlParts = this.editForm.logo.split('/');
+                const uploadsIndex = urlParts.indexOf('uploads');
+                if (uploadsIndex !== -1) {
+                    this.editForm.logo = '/' + urlParts.slice(uploadsIndex).join('/');
+                }
+            }
+            
+            this.editDialog.isAdd = false;
+            this.editDialog.visible = true;
+        },
+        
+        resetEditForm() {
+            this.editForm = {
+                id: null,
+                product_name: '',
+                intro: '',
+                logo: '',
+                qrcode: '',
+                cate_id: '',
+            };
+            this.editDialog.isAdd = false;
+            if (this.$refs.editFormRef) {
+                this.$refs.editFormRef.resetFields();
+            }
+        },
+        
+        async saveProduct() {
+            try {
+                await this.$refs.editFormRef.validate();
+                this.editDialog.loading = true;
+                const response = await axios.post('/admin/product/saveProduct', this.editForm);
+                if (response.data && response.data.code === 1) {
+                    ElMessage.success('保存成功');
+                    this.editDialog.visible = false;
+                    this.loadProducts();
+                } else {
+                    ElMessage.error(response.data?.msg || '保存失败');
+                }
+            } catch (error) {
+                if (error.response) {
+                    ElMessage.error('保存失败：' + (error.response.data?.msg || error.message));
+                } else if (error !== false) {
+                    console.log('表单验证失败:', error);
+                }
+            } finally {
+                this.editDialog.loading = false;
+            }
+        },
+        
+        beforeLogoUpload(file) {
+            const isImage = file.type.startsWith('image/');
+            const isLt5M = file.size / 1024 / 1024 < 5;
+            
+            if (!isImage) {
+                ElMessage.error('只能上传图片文件!');
+                return false;
+            }
+            if (!isLt5M) {
+                ElMessage.error('上传图片大小不能超过 5MB!');
+                return false;
+            }
+            
+            this.logoUploading = true;
+            return true;
+        },
+        
+        handleLogoSuccess(response) {
+            this.logoUploading = false;
+            
+            if (response && response.code === 1 && response.data) {
+                // 使用 base_uri（相对路径）存储到数据库
+                if (response.data.base_uri) {
+                    this.editForm.logo = response.data.base_uri;
+                    ElMessage.success('图片上传成功');
+                } else {
+                    ElMessage.error('上传成功但未返回图片地址');
+                }
+            } else {
+                ElMessage.error(response?.msg || '图片上传失败');
+            }
+        },
+        
+        handleUploadError(error) {
+            this.logoUploading = false;
+            console.error('Upload error:', error);
+            ElMessage.error('图片上传失败');
+        },
+        
+        async deleteProduct(product) {
+            try {
+                await ElMessageBox.confirm(
+                    `确定要删除产品 id = ${product.id}  "${product.product_name}" 吗？`,
+                    '确认删除',
+                    {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning',
+                    }
+                );
+                
+                const response = await axios.post('/admin/product/deleteProduct', {
+                    id: product.id
+                });
+                
+                if (response.data && response.data.code === 1) {
+                    ElMessage.success('删除成功');
+                    this.loadProducts();
+                } else {
+                    ElMessage.error(response.data?.msg || '删除失败');
+                }
+            } catch (error) {
+                if (error.response) {
+                    ElMessage.error('删除失败：' + (error.response.data?.msg || error.message));
+                } else if (error !== 'cancel') {
+                    ElMessage.info('取消删除');
+                }
+            }
+        }
+    },
+    
+    mounted() {
+        this.loadProducts();
+    }
+};
+</script>

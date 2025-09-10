@@ -12,6 +12,7 @@ import (
 	"go-web-template/internal/models"
 	"go-web-template/internal/service/admin"
 	"go-web-template/utils"
+	"math"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 )
@@ -34,12 +35,16 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 		return
 	}
 
-	// 构造响应数据
+	// 计算总页数
+	totalPages := int(math.Ceil(float64(total) / float64(req.PageSize)))
+	
+	// 构造响应数据 - 按照PHP版本格式
 	data := map[string]interface{}{
-		"list":     list,
-		"total":    total,
-		"page":     req.PageNo,
-		"pageSize": req.PageSize,
+		"total":       total,
+		"list":        list,
+		"page_no":     req.PageNo,
+		"page_size":   req.PageSize,
+		"total_pages": totalPages,
 	}
 
 	utils.Success(r, data, "获取商品列表成功")

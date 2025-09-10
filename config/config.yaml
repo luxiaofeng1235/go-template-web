@@ -44,7 +44,7 @@ database:
     debug: true
     
     # 连接池配置
-    linkInfo: "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4"
+    linkInfo: "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4&parseTime=True&loc=Local"
     connMaxIdle: 10
     connMaxOpen: 100
     connMaxLifetime: 300
