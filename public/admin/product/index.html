@@ -125,7 +125,7 @@
                             </div>
                         </div>
                     </div>
-                    <img v-else src="/admin-frontend/assets/images/upload-style.png" class="logo-image" style="opacity: 0.8;">
+                    <img v-else :src="getDefaultUploadImage()" class="logo-image" style="opacity: 0.8;">
                 </el-upload>
             </div>
         </el-form-item>
@@ -213,6 +213,11 @@ window.pageAppConfig = {
             }
             // 否则拼接静态资源服务器地址（8082端口）
             return 'http://localhost:8082' + url;
+        },
+        
+        // 获取默认上传图片URL（通过8082端口访问）
+        getDefaultUploadImage() {
+            return this.getImageUrl('/admin/assets/images/upload-style.png');
         },
         
         async loadProducts(page = 1) {
