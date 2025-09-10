@@ -93,10 +93,10 @@ func (s *MessageService) GetChatUserList(req *models.ChatUserListReq) (list []mo
 //   - req: 获取聊天历史请求，支持群聊和私聊两种模式
 //
 // 返回值:
-//   - list: 聊天历史记录列表
+//   - list: 聊天历史记录列表，包含关联的用户信息
 //   - total: 符合条件的总记录数
 //   - err: 错误信息
-func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []models.ChatMessage, total int64, err error) {
+func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []map[string]interface{}, total int64, err error) {
 	// 设置默认聊天类型为群聊
 	if req.ChatType <= 0 {
 		req.ChatType = constant.CHAT_TYPE_GROUP // 默认群聊
@@ -109,57 +109,27 @@ func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (lis
 		req.PageSize = constant.PAGE_SIZE
 	}
 
-	// 构建查询条件
-	db := global.DB.Model(&models.ChatMessage{}).Where("chat_type = ?", req.ChatType)
+	// 根据PHP逻辑关联secret_keys表获取发送者信息
+	db := global.DB.Table("ls_chat_messages a").
+		Select("a.*, s.nickname, s.avtar_url").
+		Joins("JOIN ls_secret_keys s ON s.access_key = a.sender_id").
+		Where("a.chat_type = ?", req.ChatType)
 
-	// 根据聊天类型构建不同的查询条件
-	if req.ChatType == 2 { // 私聊模式
-		// 私聊时需要验证参数
-		if req.AccessKey == "" || req.ReceiverID == "" {
-			err = fmt.Errorf("私聊模式下访问密钥和接收者ID不能为空")
-			return
-		}
-
-		// 验证AccessKey，获取发送者信息
-		var secretKey models.SecretKey
-		err = global.DB.Where("access_key = ? AND status = ?", req.AccessKey, models.SecretKeyStatusNormal).First(&secretKey).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				err = fmt.Errorf("无效的访问密钥")
-				return
-			}
-			global.Errlog.Error("查询访问密钥失败", "accessKey", req.AccessKey, "error", err)
-			return
-		}
-
-		// 查询双向私聊记录（发送者与接收者之间的对话）
-		db = db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))",
-			secretKey.DeviceFingerprint, req.ReceiverID, req.ReceiverID, secretKey.DeviceFingerprint)
-
-	} else { // 群聊模式（chat_type = 1）
-		// 群聊可以不需要特定的发送者和接收者限制，显示所有群聊消息
-		// 如果提供了access_key，可以用于权限验证
-		if req.AccessKey != "" {
-			var secretKey models.SecretKey
-			err = global.DB.Where("access_key = ? AND status = ?", req.AccessKey, models.SecretKeyStatusNormal).First(&secretKey).Error
-			if err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					err = fmt.Errorf("无效的访问密钥")
-					return
-				}
-				global.Errlog.Error("查询访问密钥失败", "accessKey", req.AccessKey, "error", err)
-				return
-			}
-		}
+	// 如果是私聊模式，添加双向查询条件
+	if req.ChatType == constant.CHAT_TYPE_PRIVATE && req.AccessKey != "" && req.ReceiverID != "" {
+		db = db.Where("((a.sender_id = ? AND a.receiver_id = ?) OR (a.sender_id = ? AND a.receiver_id = ?))",
+			req.AccessKey, req.ReceiverID, req.ReceiverID, req.AccessKey)
 	}
-	// 按时间倒序排列
-	db = db.Order("created_at desc")
+
+	db = db.Order("a.created_at desc")
+
 	// 统计总条数
 	err = db.Count(&total).Error
 	if err != nil {
 		global.Errlog.Error("查询聊天记录总数失败", "chatType", req.ChatType, "error", err)
 		return
 	}
+
 	// 分页查询
 	err = db.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&list).Error
 	if err != nil {
@@ -171,5 +141,22 @@ func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (lis
 	if len(list) <= 0 {
 		return list, total, nil
 	}
+
+	// 判断是否为自己的消息（使用传入的accessKey参数）
+	if req.AccessKey != "" {
+		for i := range list {
+			if senderID, ok := list[i]["sender_id"].(string); ok && senderID == req.AccessKey {
+				list[i]["is_self"] = 1
+			} else {
+				list[i]["is_self"] = 0
+			}
+		}
+	} else {
+		// 如果没有accessKey，默认都不是自己的消息
+		for i := range list {
+			list[i]["is_self"] = 0
+		}
+	}
+
 	return list, total, err
 }
