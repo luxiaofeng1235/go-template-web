@@ -315,9 +315,30 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 		return nil, fmt.Errorf("保存用户数据失败")
 	}
 
+	// 查询更新后的用户信息并返回完整数据
+	var updatedUser models.SecretKey
+	err = global.DB.Where("access_key = ? AND status = ?", req.AccessKey, constant.STATUS_ENABLE).First(&updatedUser).Error
+	if err != nil {
+		global.Errlog.Error("查询更新后用户信息失败", "accessKey", req.AccessKey, "error", err)
+		return nil, fmt.Errorf("查询更新后用户信息失败")
+	}
+
 	return map[string]interface{}{
-		"success": true,
-		"message": "用户数据保存成功",
+		"id":                updatedUser.ID,
+		"device_fingerprint": updatedUser.DeviceFingerprint,
+		"access_key":        updatedUser.AccessKey,
+		"group_id":          updatedUser.GroupID,
+		"nickname":          updatedUser.Nickname,
+		"user_note":         updatedUser.UserNote,
+		"avtar_url":         updatedUser.AvtarURL,
+		"position":          updatedUser.Position,
+		"device_info":       updatedUser.DeviceInfo,
+		"first_visit_time":  updatedUser.FirstVisitTime,
+		"last_visit_time":   updatedUser.LastVisitTime,
+		"visit_count":       updatedUser.VisitCount,
+		"status":            updatedUser.Status,
+		"created_at":        updatedUser.CreatedAt,
+		"updated_at":        updatedUser.UpdatedAt,
 	}, nil
 }
 
@@ -378,23 +399,29 @@ func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]inter
 		}
 	}
 
-	// 返回格式按照SecretKey模型的格式（查询目标用户信息）
-	var targetUser models.SecretKey
-	err = global.DB.Where("access_key = ? AND status = ?", toAccessKey, constant.STATUS_ENABLE).First(&targetUser).Error
+	// 查询操作者的完整用户信息并返回
+	var operatorUser models.SecretKey
+	err = global.DB.Where("access_key = ? AND status = ?", accessKey, constant.STATUS_ENABLE).First(&operatorUser).Error
 	if err != nil {
-		global.Errlog.Error("查询目标用户失败", "toAccessKey", toAccessKey, "error", err)
-		return nil, fmt.Errorf("查询目标用户失败")
+		global.Errlog.Error("查询操作者用户信息失败", "accessKey", accessKey, "error", err)
+		return nil, fmt.Errorf("查询操作者用户信息失败")
 	}
 
 	return map[string]interface{}{
-		"success": true,
-		"message": "用户备注保存成功",
-		"user_info": map[string]interface{}{
-			"id":         targetUser.ID,
-			"access_key": targetUser.AccessKey,
-			"nickname":   targetUser.Nickname,
-			"avtar_url":  targetUser.AvtarURL,
-			"user_note":  userNote, // 返回设置的备注
-		},
+		"id":                operatorUser.ID,
+		"device_fingerprint": operatorUser.DeviceFingerprint,
+		"access_key":        operatorUser.AccessKey,
+		"group_id":          operatorUser.GroupID,
+		"nickname":          operatorUser.Nickname,
+		"user_note":         operatorUser.UserNote,
+		"avtar_url":         operatorUser.AvtarURL,
+		"position":          operatorUser.Position,
+		"device_info":       operatorUser.DeviceInfo,
+		"first_visit_time":  operatorUser.FirstVisitTime,
+		"last_visit_time":   operatorUser.LastVisitTime,
+		"visit_count":       operatorUser.VisitCount,
+		"status":            operatorUser.Status,
+		"created_at":        operatorUser.CreatedAt,
+		"updated_at":        operatorUser.UpdatedAt,
 	}, nil
 }
