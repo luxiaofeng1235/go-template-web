@@ -30,6 +30,25 @@ type ProductListItem struct {
 	QRCode      string `json:"qrcode"`       // 二维码
 }
 
+// SaveProductReq 保存商品请求参数
+type SaveProductReq struct {
+	ID          int64  `json:"id" form:"id"`                     // 商品ID（编辑时传入，新增时为空）
+	ProductName string `json:"product_name" form:"product_name"` // 商品名称（必填）
+	CateID      int    `json:"cate_id" form:"cate_id"`           // 分类ID
+	Intro       string `json:"intro" form:"intro"`               // 商品介绍
+	Logo        string `json:"logo" form:"logo"`                 // 商品Logo
+	QRCode      string `json:"qrcode" form:"qrcode"`             // 二维码
+}
+
+// SaveProductRes 保存商品响应数据
+type SaveProductRes struct {
+	ID          int64  `json:"id"`           // 商品ID
+	ProductName string `json:"product_name"` // 商品名称
+	CateID      int    `json:"cate_id"`      // 分类ID
+	CreatedAt   int64  `json:"created_at"`   // 创建时间
+	UpdatedAt   int64  `json:"updated_at"`   // 更新时间
+}
+
 // TableName 指定表名
 func (Product) TableName() string {
 	return "ls_product"

@@ -3,24 +3,27 @@ package utils
 import (
 	"fmt"
 	"strings"
+
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
+// 获取单独的配置信息
 func GetStaticResourceURL(r *ghttp.Request, relativePath string) string {
 	protocol := "http"
 	if r.TLS != nil {
 		protocol = "https"
 	}
-	
+
 	host := r.GetHost()
 	if strings.Contains(host, ":") {
 		hostParts := strings.Split(host, ":")
 		host = hostParts[0]
 	}
-	
+
 	return fmt.Sprintf("%s://%s:8082%s", protocol, host, relativePath)
 }
 
+// 获取单独的URL信息
 func GetFullDomain(r *ghttp.Request) string {
 	scheme := "http"
 	if r.TLS != nil {
