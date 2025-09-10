@@ -72,3 +72,17 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 		"messages": list,
 	}, "聊天历史")
 }
+
+// 认证设备
+func (c *ChatController) DeviceAuth(r *ghttp.Request) {
+	utils.Success(r, map[string]interface{}{
+		"message": "1111111",
+	}, "授权记录")
+}
+
+// 保存用户资料
+func (c *ChatController) SaveUserData(r *ghttp.Request) {
+	utils.Success(r, map[string]interface{}{
+		"message": "2222222222",
+	}, "测试")
+}
