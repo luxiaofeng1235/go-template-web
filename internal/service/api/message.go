@@ -122,7 +122,6 @@ func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (lis
 	}
 
 	db = db.Order("a.created_at desc")
-
 	// 统计总条数
 	err = db.Count(&total).Error
 	if err != nil {
