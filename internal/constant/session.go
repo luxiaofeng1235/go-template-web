@@ -10,9 +10,7 @@ package constant
 
 // 用户状态常量 (SecretKey)
 const (
-	SecretKeyStatusNormal   int8 = 1 // 正常
-	SecretKeyStatusDisabled int8 = 2 // 禁用
-	SecretKeyStatusDeleted  int8 = 3 // 删除
+	SecretKeyStatusNormal int8 = 1 // 正常
 )
 
 // 会话状态常量

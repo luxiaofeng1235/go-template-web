@@ -73,11 +73,28 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 	}, "聊天历史")
 }
 
-// 认证设备
+// DeviceAuth 设备认证（对应PHP的getOrCreateDeviceAccess）
 func (c *ChatController) DeviceAuth(r *ghttp.Request) {
-	utils.Success(r, map[string]interface{}{
-		"message": "1111111",
-	}, "设备认证成功")
+	var req models.CreateSecretKeyReq
+	if err := r.Parse(&req); err != nil {
+		utils.Fail(r, err, "参数解析失败")
+		return
+	}
+
+	// 参数验证
+	if req.DeviceFingerprint == "" {
+		utils.Fail(r, nil, "设备指纹不能为空")
+		return
+	}
+
+	// 调用设备认证逻辑
+	result, err := api.GetOrCreateDeviceAccess(req.DeviceFingerprint, "", req.DeviceInfo)
+	if err != nil {
+		utils.Fail(r, err, "设备认证失败")
+		return
+	}
+
+	utils.Success(r, result, "授权记录")
 }
 
 // 保存用户资料

@@ -28,7 +28,6 @@ func (*SecretKey) TableName() string {
 // CreateSecretKeyReq 创建用户密钥请求
 type CreateSecretKeyReq struct {
 	DeviceFingerprint string `form:"device_fingerprint" json:"device_fingerprint" `
-	UserNote          string `form:"user_note" json:"user_note"`
 	DeviceInfo        string `form:"device_info" json:"device_info"`
 }
 
