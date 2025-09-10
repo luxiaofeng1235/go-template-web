@@ -166,6 +166,9 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 		return nil, fmt.Errorf("保存设备访问信息失败")
 	}
 
+	// 确保获取到正确的ID
+	global.Errlog.Info("设备创建成功", "deviceFingerprint", deviceFingerprint, "id", data.ID)
+
 	return &models.CreateSecretResp{
 		Id:        data.ID,
 		AccessKey: accessKey,
