@@ -59,13 +59,8 @@ func (c *ProductController) GetCategoryList(r *ghttp.Request) {
 		return
 	}
 
-	// 构造响应数据
-	data := map[string]interface{}{
-		"categories": categories,
-		"total":      len(categories),
-	}
-
-	utils.Success(r, data, "获取分类列表成功")
+	// 直接返回分类数组，不需要包装在categories字段中
+	utils.Success(r, categories, "分类列表")
 }
 
 // SaveProduct 保存商品信息 - 支持新增和编辑

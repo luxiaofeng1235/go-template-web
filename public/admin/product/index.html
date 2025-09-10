@@ -113,7 +113,7 @@
                     :on-success="handleLogoSuccess"
                     :on-error="handleUploadError"
                     accept="image/*">
-                    <img v-if="editForm.logo && !logoUploading" :src="getImageUrl(editForm.logo)" class="logo-image">
+                    <img v-if="editForm.logo && !logoUploading" :src="getImageUrl(editForm.logo)" class="logo-image" :key="editForm.logo">
                     <div v-else-if="logoUploading" class="logo-uploading">
                         <div class="upload-loading-wrapper">
                             <el-icon class="is-loading upload-loading-icon" size="24"><Loading /></el-icon>
@@ -211,8 +211,8 @@ window.pageAppConfig = {
             if (url.indexOf('http://') === 0 || url.indexOf('https://') === 0) {
                 return url;
             }
-            // 否则拼接当前域名（相对路径已经带斜杠开头）
-            return window.location.origin + url;
+            // 否则拼接静态资源服务器地址（8082端口）
+            return 'http://localhost:8082' + url;
         },
         
         async loadProducts(page = 1) {
@@ -347,9 +347,15 @@ window.pageAppConfig = {
             this.logoUploading = false;
             
             if (response && response.code === 1 && response.data) {
-                // 使用 base_uri（相对路径）存储到数据库
-                if (response.data.base_uri) {
-                    this.editForm.logo = response.data.base_uri;
+                // 直接使用完整的 uri 地址用于显示，base_uri 用于存储
+                if (response.data.uri && response.data.base_uri) {
+                    // 强制触发Vue响应式更新 - 使用完整URI直接显示
+                    this.$set ? this.$set(this.editForm, 'logo', response.data.uri) : (this.editForm.logo = response.data.uri);
+                    // 确保DOM重新渲染
+                    this.$nextTick(() => {
+                        console.log('图片上传成功，完整地址:', response.data.uri);
+                        console.log('相对地址:', response.data.base_uri);
+                    });
                     ElMessage.success('图片上传成功');
                 } else {
                     ElMessage.error('上传成功但未返回图片地址');
