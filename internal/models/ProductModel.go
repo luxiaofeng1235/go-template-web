@@ -12,6 +12,24 @@ type Product struct {
 	UpdatedAt   int64  `gorm:"column:updated_at" json:"updated_at"`     // 更新时间
 }
 
+// ProductListReq 商品列表请求参数
+type ProductListReq struct {
+	PageNo   int `json:"page_no" form:"page_no"`     // 页码
+	PageSize int `json:"page_size" form:"page_size"` // 每页数量
+	CateID   int `json:"cate_id" form:"cate_id"`     // 分类ID（可选）
+}
+
+// ProductListItem 商品列表项
+type ProductListItem struct {
+	ID          int64  `json:"id"`           // 商品ID
+	ProductName string `json:"product_name"` // 商品名称
+	CateID      int    `json:"cate_id"`      // 分类ID
+	CateName    string `json:"cate_name"`    // 分类名称
+	Intro       string `json:"intro"`        // 商品介绍
+	Logo        string `json:"logo"`         // 商品Logo（完整URL）
+	QRCode      string `json:"qrcode"`       // 二维码
+}
+
 // TableName 指定表名
 func (Product) TableName() string {
 	return "ls_product"

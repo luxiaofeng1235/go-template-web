@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"go-web-template/internal/models"
 	"go-web-template/internal/service/api"
 	"go-web-template/internal/service/common"
 	"go-web-template/utils"
@@ -13,7 +14,7 @@ type ProductController struct{}
 // GetProductList 获取商品列表
 func (c *ProductController) GetProductList(r *ghttp.Request) {
 	// 解析请求参数
-	var req api.ProductListReq
+	var req models.ProductListReq
 	if err := r.Parse(&req); err != nil {
 		utils.ParamError(r, "参数解析错误")
 		return
