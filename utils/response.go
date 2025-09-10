@@ -121,7 +121,7 @@ func ParamError(r *ghttp.Request, msg ...string) {
 	}
 
 	r.Response.WriteJsonExit(ResponseData{
-		Code: constant.PARAM_ERROR,
+		Code: constant.ERROR_CODE,
 		Show: 0,
 		Msg:  message,
 		Data: nil,
