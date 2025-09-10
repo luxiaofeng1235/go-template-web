@@ -204,7 +204,6 @@ func (c *AiController) SendStream2(r *ghttp.Request) {
 		utils.FailEncrypt(r, err, "参数验证失败")
 		return
 	}
-
 	// 调用Stream服务处理流式响应
 	streamService := &api.StreamService{}
 	if err := streamService.SendStream2(r, req); err != nil {
