@@ -10,10 +10,7 @@
 package global
 
 import (
-	"sync"
-
 	"github.com/go-redis/redis/v8"
-	"github.com/nsqio/go-nsq"
 	"github.com/olahol/melody"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -27,32 +24,13 @@ var (
 	// === 数据层相关 ===
 	DB    *gorm.DB      // GORM数据库连接实例
 	Redis *redis.Client // Redis缓存客户端
-
 	// === 消息和通信相关 ===
-	NsqPro  *nsq.Producer  // NSQ消息队列生产者
-	KeyLock *sync.Mutex    // 分布式锁（使用sync.Mutex作为简单实现）
-	Ws      *melody.Melody // WebSocket连接管理器
-	// === 日志系统相关 ===
+	Ws *melody.Melody // WebSocket连接管理器
 	// 基础日志记录器
 	Errlog     *zap.SugaredLogger // 系统错误日志
 	Sqllog     *zap.SugaredLogger // 数据库SQL执行日志
 	Requestlog *zap.SugaredLogger // HTTP请求日志
-	Paylog     *zap.SugaredLogger // 支付相关日志
-
 	// WebSocket和消息相关日志
-	Wslog  *zap.SugaredLogger // WebSocket连接日志
-	Nsqlog *zap.SugaredLogger // NSQ消息队列日志
-
-	// 数据采集和更新相关日志
-	Collectlog *zap.SugaredLogger // 数据采集日志
-	Updatelog  *zap.SugaredLogger // 数据更新日志
-
-	// 业务模块专用日志（从go-novel迁移的模块日志）
-	Biquge34log  *zap.SugaredLogger // 笔趣阁34模块日志
-	Paoshu8log   *zap.SugaredLogger // 泡书8模块日志
-	Xswlog       *zap.SugaredLogger // 小说网模块日志
-	Lydlog       *zap.SugaredLogger // 龙腾小说网模块日志
-	Bqg24log     *zap.SugaredLogger // 笔趣阁24模块日志
-	Siluke520log *zap.SugaredLogger // 丝路客520模块日志
+	Wslog *zap.SugaredLogger // WebSocket连接日志
 
 )

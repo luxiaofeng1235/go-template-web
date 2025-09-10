@@ -11,7 +11,7 @@ import (
 	"go-web-template/routers/api_routes"
 	"log"
 	"sync"
-	
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -27,7 +27,7 @@ func StartAPIServer() {
 	InitDB()
 	InitZapLog()
 	InitRedis()
-	InitNsq()
+	// InitNsq() // Temporarily disabled as not needed
 	InitKeyLock()
 	InitWs()
 	InitGeoReader()
@@ -49,7 +49,7 @@ func StartAdminServer() {
 	InitDB()
 	InitZapLog()
 	InitRedis()
-	InitNsq()
+	// InitNsq() // Temporarily disabled as not needed
 	InitKeyLock()
 	InitGeoReader()
 	InitBigcache()
@@ -85,18 +85,18 @@ func InitDB() {
 		// 如果linkInfo为空，构建DSN
 		dsn = "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4&parseTime=True&loc=Local"
 	}
-	
+
 	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		g.Log().Fatal(ctx, "GORM数据库连接失败:", err)
 		return
 	}
-	
+
 	// 设置连接字符集为UTF8MB4
 	if err := gormDB.Exec("SET NAMES utf8mb4").Error; err != nil {
 		g.Log().Warning(ctx, "设置数据库字符集失败:", err)
 	}
-	
+
 	// 设置全局GORM数据库实例
 	global.DB = gormDB
 	g.Log().Info(ctx, "GORM数据库初始化成功")
@@ -136,13 +136,11 @@ func InitZapLog() {
 
 // InitNsq 初始化NSQ消息队列
 func InitNsq() {
-	var ctx = gctx.New()
-
 	// 这里可以根据配置初始化NSQ Producer
 	// 目前先设置为nil，后续根据需要配置
 	global.NsqPro = nil
 
-	g.Log().Info(ctx, "NSQ消息队列初始化完成")
+	// g.Log().Info(ctx, "NSQ消息队列初始化完成") // Temporarily disabled
 }
 
 // InitKeyLock 初始化分布式锁
