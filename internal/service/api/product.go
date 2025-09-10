@@ -83,11 +83,6 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 
 	// 获取基础URL用于处理图片地址
 	baseURL := utils.GetFullDomain(r)
-	if baseURL == "" {
-		global.Errlog.Error("获取域名失败", "request", r.Request.Host)
-		baseURL = "http://localhost:8082" // 默认静态资源服务器地址
-	}
-
 	// 转换为返回格式并处理数据
 	list = make([]models.ProductListItem, 0, len(products))
 
@@ -97,7 +92,6 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 			global.Errlog.Error("商品数据异常，ID无效", "product", product)
 			continue
 		}
-
 		item := models.ProductListItem{
 			ID:          product.ID,
 			ProductName: product.ProductName,
