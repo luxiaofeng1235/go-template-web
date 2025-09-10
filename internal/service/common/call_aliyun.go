@@ -616,28 +616,21 @@ func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRe
 		}
 
 		workRes := models.AiWorkRes{
-			ID:         work.ID,
-			UserID:     work.UserID,
-			TaskID:     work.TaskID,
-			Params:     params,
-			Work:       workData,
-			Type:       work.Type,
-			TypeName:   models.GetAiWorkTypeName(work.Type),
-			Status:     work.Status,
-			StatusName: models.GetAiWorkStatusName(work.Status),
-			CreateTime: work.CreateTime,
-			UpdateTime: work.UpdateTime,
+			TaskID: work.TaskID,
+			Params: params,
+			Type:   work.Type,
+			Status: work.Status,
+			Work:   workData,
 		}
 		workList = append(workList, workRes)
 	}
 
 	// 构建响应
 	result := &models.AiWorkListRes{
-		Works:    workList,
-		Total:    total,
-		Page:     page,
-		PageSize: pageSize,
-		HasMore:  int64(page) < pageCount,
+		Page:      fmt.Sprintf("%d", page),
+		PageCount: int(pageCount),
+		Total:     total,
+		List:      workList,
 	}
 
 	global.Requestlog.Infof("获取AI作品列表成功: userID=%s, type=%d, page=%d, total=%d", userID, workType, page, total)
