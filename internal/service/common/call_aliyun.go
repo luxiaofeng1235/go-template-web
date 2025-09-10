@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -61,11 +62,12 @@ type ImageGenerateInput struct {
 }
 
 type ImageGenerateParams struct {
-	Size   string `json:"size,omitempty"`
-	N      int    `json:"n,omitempty"`
-	Seed   int    `json:"seed,omitempty"`
-	Style  string `json:"style,omitempty"`
-	Format string `json:"format,omitempty"`
+	Size      string `json:"size,omitempty"`
+	N         int    `json:"n,omitempty"`
+	Seed      int    `json:"seed,omitempty"`
+	Style     string `json:"style,omitempty"`
+	Format    string `json:"format,omitempty"`
+	Watermark bool   `json:"watermark,omitempty"`
 }
 
 // 图片生成响应结构
@@ -229,6 +231,11 @@ func (s *AliyunAIService) makeRequest(method, url string, payload interface{}) (
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	
+	// 对于图片和视频生成API，需要启用异步模式
+	if strings.Contains(url, "text2image") || strings.Contains(url, "video-generation") {
+		req.Header.Set("X-DashScope-Async", "enable")
+	}
 
 	// 发起请求
 	resp, err := s.client.Do(req)
@@ -316,11 +323,15 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 		model = constant.IMAGE_MODEL_TURBO
 	}
 
+	// 处理watermark参数：字符串 "1" 转为 true，其他为 false
+	watermarkBool := watermark == "1"
+	
 	// 构建图片生成参数
 	params := &ImageGenerateParams{
-		Size:   size,
-		N:      n,
-		Format: constant.IMAGE_FORMAT_URL,
+		Size:      size,
+		N:         n,
+		Format:    constant.IMAGE_FORMAT_URL,
+		Watermark: watermarkBool,
 	}
 
 	// 调用阿里云API生成图片

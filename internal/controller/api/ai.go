@@ -78,7 +78,25 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 		return
 	}
 
-	utils.Success(r, result, "图片生成请求已提交")
+	// 提取task_id从阿里云响应中
+	taskID := ""
+	if result != nil && result.Output != nil {
+		output, ok := result.Output.(map[string]interface{})
+		if ok {
+			if id, exists := output["task_id"].(string); exists {
+				taskID = id
+			}
+		}
+	}
+
+	// 如果没有获取到task_id，返回错误
+	if taskID == "" {
+		utils.FailEncrypt(r, fmt.Errorf("获取任务ID失败"), "图片生成请求失败")
+		return
+	}
+
+	// 返回期望格式：只返回task_id字符串
+	utils.Success(r, taskID, "图片生成中")
 }
 
 // GetImage 获取图片生成结果
@@ -142,7 +160,25 @@ func (c *AiController) ToVideo(r *ghttp.Request) {
 		return
 	}
 
-	utils.Success(r, result, "视频生成请求已提交")
+	// 提取task_id从阿里云响应中
+	taskID := ""
+	if result != nil && result.Output != nil {
+		output, ok := result.Output.(map[string]interface{})
+		if ok {
+			if id, exists := output["task_id"].(string); exists {
+				taskID = id
+			}
+		}
+	}
+
+	// 如果没有获取到task_id，返回错误
+	if taskID == "" {
+		utils.FailEncrypt(r, fmt.Errorf("获取任务ID失败"), "视频生成请求失败")
+		return
+	}
+
+	// 返回期望格式：只返回task_id字符串
+	utils.Success(r, taskID, "视频生成中")
 }
 
 // GetVideo 获取视频生成结果
