@@ -99,12 +99,4 @@ const (
 	// 视频生成模型
 	VIDEO_MODEL_I2V_PLUS = "wanx2.1-i2v-plus"  // 图生视频
 	VIDEO_MODEL_T2V_TURBO = "wanx2.1-t2v-turbo" // 文生视频
-
-	// 视频时长(秒)
-	VIDEO_DURATION_5S  = 5
-	VIDEO_DURATION_10S = 10
-
-	// 视频分辨率
-	VIDEO_RESOLUTION_720P  = "720x480"
-	VIDEO_RESOLUTION_1080P = "1280x720"
 )

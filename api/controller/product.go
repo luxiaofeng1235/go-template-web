@@ -6,6 +6,7 @@ import (
 	"go-web-template/internal/service/common"
 	"go-web-template/utils"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
@@ -13,15 +14,20 @@ type ProductController struct{}
 
 // GetProductList 获取商品列表
 func (c *ProductController) GetProductList(r *ghttp.Request) {
-	// 解析请求参数
-	var req models.ProductListReq
+	var req *models.ProductListReq
 	if err := r.Parse(&req); err != nil {
-		utils.ParamError(r, "参数解析错误")
+		utils.FailEncrypt(r, err, "参数解析失败")
+		return
+	}
+
+	// 参数验证
+	if err := g.Validator().Data(req).Run(r.Context()); err != nil {
+		utils.FailEncrypt(r, err, "参数验证失败")
 		return
 	}
 
 	// 调用service层处理业务逻辑
-	list, err := api.GetProductList(r, &req)
+	list, err := api.GetProductList(r, req)
 	if err != nil {
 		utils.Fail(r, err, "获取商品列表失败")
 		return

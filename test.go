@@ -99,19 +99,12 @@ func testVideoGenerateParams(aiService *common.AliyunAIService) {
 	prompt := "海边日落的美丽景色，海浪轻柔地拍打着沙滩"
 	
 	fmt.Printf("  测试提示词: %s\n", prompt)
-	fmt.Printf("  默认视频时长: %d秒\n", constant.VIDEO_DURATION_5S)
-	fmt.Printf("  支持的视频分辨率: %s, %s\n", 
-		constant.VIDEO_RESOLUTION_720P, constant.VIDEO_RESOLUTION_1080P)
+	fmt.Println("  视频生成模型:")
+	fmt.Printf("    图生视频: %s\n", constant.VIDEO_MODEL_I2V_PLUS)
+	fmt.Printf("    文生视频: %s\n", constant.VIDEO_MODEL_T2V_TURBO)
 	
-	// 创建视频生成参数
-	params := &common.VideoGenerateParams{
-		Duration:   constant.VIDEO_DURATION_5S,
-		Resolution: constant.VIDEO_RESOLUTION_720P,
-		FrameRate:  24,
-	}
-	
-	fmt.Printf("  参数配置 - 时长: %d秒, 分辨率: %s, 帧率: %dfps\n", 
-		params.Duration, params.Resolution, params.FrameRate)
+	// 与PHP保持一致，不传递额外参数
+	fmt.Println("  参数配置: 使用默认参数（与PHP保持一致）")
 	
 	// 注意：这里不实际调用API，只是测试参数配置
 	fmt.Println("  ✅ 视频生成参数配置正常")
@@ -160,8 +153,7 @@ func demonstrateUsage() {
 	//     "海边日落的美景",
 	//     ossService,
 	//     &common.VideoGenerateParams{
-	//         Duration: constant.VIDEO_DURATION_5S,
-	//         Resolution: constant.VIDEO_RESOLUTION_720P,
+	//         // 与PHP保持一致，不传递额外参数
 	//     },
 	// )
 	

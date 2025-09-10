@@ -82,6 +82,7 @@ type VideoGenerateRequest struct {
 
 type VideoGenerateInput struct {
 	Prompt string `json:"prompt"`
+	ImgURL string `json:"img_url,omitempty"`
 }
 
 type VideoGenerateParams struct {
@@ -178,26 +179,17 @@ func (s *AliyunAIService) GenerateVideo(prompt string, options *VideoGeneratePar
 
 // GenerateVideoWithModel 使用指定模型生成视频
 func (s *AliyunAIService) GenerateVideoWithModel(prompt string, model string, options *VideoGenerateParams) (*AliyunAIResponse, error) {
-	// 设置默认参数
-	if options == nil {
-		options = &VideoGenerateParams{}
-	}
-	if options.Duration == 0 {
-		options.Duration = constant.VIDEO_DURATION_5S
-	}
-	if options.Resolution == "" {
-		options.Resolution = constant.VIDEO_RESOLUTION_720P
-	}
-	if options.FrameRate == 0 {
-		options.FrameRate = 24
-	}
-
+	// 与PHP保持一致，简化请求结构
 	request := VideoGenerateRequest{
 		Model: model,
 		Input: VideoGenerateInput{
 			Prompt: prompt,
 		},
-		Parameters: *options,
+	}
+	
+	// 只有在options不为空且有实际参数时才添加Parameters
+	if options != nil && (options.Duration != 0 || options.Resolution != "" || options.FrameRate != 0) {
+		request.Parameters = *options
 	}
 
 	return s.makeRequest("POST", constant.ALIYUN_VIDEO_URL, request)
@@ -290,6 +282,75 @@ func (s *AliyunAIService) GenerateImageToOSS(prompt string, ossService *OSSServi
 	}
 
 	return ossResult, nil
+}
+
+// GenerateImageByModel 根据模型生成图片的统一入口方法
+func GenerateImageByModel(modelType int, prompt string, size string, n int, watermark string) (*AliyunAIResponse, error) {
+	// 创建AI服务实例
+	aiService := NewAliyunAIService()
+	if aiService == nil {
+		return nil, fmt.Errorf("AI服务初始化失败")
+	}
+
+	// 根据模型类型选择正确的模型
+	var model string
+	switch modelType {
+	case 1:
+		model = constant.IMAGE_MODEL_TURBO
+	case 2:
+		model = constant.IMAGE_MODEL_PLUS
+	default:
+		model = constant.IMAGE_MODEL_TURBO
+	}
+
+	// 构建图片生成参数
+	params := &ImageGenerateParams{
+		Size:   size,
+		N:      n,
+		Format: constant.IMAGE_FORMAT_URL,
+	}
+
+	return aiService.GenerateImageWithModel(prompt, model, params)
+}
+
+// GenerateVideoByType 根据类型生成视频的统一入口方法
+func GenerateVideoByType(toType int, prompt string, imgURL string) (*AliyunAIResponse, error) {
+	// 创建AI服务实例
+	aiService := NewAliyunAIService()
+	if aiService == nil {
+		return nil, fmt.Errorf("AI服务初始化失败")
+	}
+
+	// 根据to参数选择正确的模型
+	var model string
+	switch toType {
+	case 1:
+		model = constant.VIDEO_MODEL_I2V_PLUS // 图生视频
+	case 2:
+		model = constant.VIDEO_MODEL_T2V_TURBO // 文生视频
+	default:
+		model = constant.VIDEO_MODEL_T2V_TURBO
+	}
+
+	// 构建请求输入
+	input := VideoGenerateInput{
+		Prompt: prompt,
+	}
+	
+	// 如果是图生视频且提供了图片URL，添加到输入中
+	if toType == 1 && imgURL != "" {
+		// 注意：这里需要根据阿里云API的实际要求来处理图片URL
+		// 可能需要转换为base64或其他格式
+		input.ImgURL = imgURL
+	}
+
+	// 与PHP保持一致，不传递额外参数
+	request := VideoGenerateRequest{
+		Model: model,
+		Input: input,
+	}
+
+	return aiService.makeRequest("POST", constant.ALIYUN_VIDEO_URL, request)
 }
 
 // 便捷方法：直接生成视频并上传到OSS

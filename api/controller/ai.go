@@ -11,7 +11,6 @@ package controller
 import (
 	"fmt"
 	"go-web-template/global"
-	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
 	"go-web-template/internal/service/common"
 	"go-web-template/utils"
@@ -67,34 +66,11 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 		return
 	}
 
-	// 创建AI服务实例
-	aiService := common.NewAliyunAIService()
-	if aiService == nil {
-		utils.FailEncrypt(r, fmt.Errorf("AI服务初始化失败"), "AI服务初始化失败")
-		return
-	}
-
-	// 根据模型类型选择正确的模型
-	var model string
-	switch req.Model {
-	case 1:
-		model = constant.IMAGE_MODEL_TURBO
-	case 2:
-		model = constant.IMAGE_MODEL_PLUS
-	default:
-		model = constant.IMAGE_MODEL_TURBO
-	}
-
-	// 构建图片生成参数
+	// 构建图片尺寸字符串
 	imageSize := fmt.Sprintf("%d*%d", width, height)
-	params := &common.ImageGenerateParams{
-		Size:   imageSize,
-		N:      req.N,
-		Format: constant.IMAGE_FORMAT_URL,
-	}
-
-	// 调用图片生成服务
-	result, err := aiService.GenerateImageWithModel(req.Prompt, model, params)
+	
+	// 调用图片生成服务 - 统一在service层处理复杂逻辑
+	result, err := common.GenerateImageByModel(req.Model, req.Prompt, imageSize, req.N, req.Watermark)
 	if err != nil {
 		global.Errlog.Error(r.Context(), "图片生成失败: %v", err)
 		utils.FailEncrypt(r, err, "图片生成失败")
@@ -158,33 +134,8 @@ func (c *AiController) ToVideo(r *ghttp.Request) {
 		}
 	}
 
-	// 创建AI服务实例
-	aiService := common.NewAliyunAIService()
-	if aiService == nil {
-		utils.FailEncrypt(r, fmt.Errorf("AI服务初始化失败"), "AI服务初始化失败")
-		return
-	}
-
-	// 根据to参数选择正确的模型
-	var model string
-	switch req.To {
-	case 1:
-		model = constant.VIDEO_MODEL_I2V_PLUS // 图生视频
-	case 2:
-		model = constant.VIDEO_MODEL_T2V_TURBO // 文生视频
-	default:
-		model = constant.VIDEO_MODEL_T2V_TURBO
-	}
-
-	// 构建视频生成参数
-	params := &common.VideoGenerateParams{
-		Duration:   constant.VIDEO_DURATION_5S,
-		Resolution: constant.VIDEO_RESOLUTION_720P,
-		FrameRate:  24,
-	}
-
-	// 调用视频生成服务
-	result, err := aiService.GenerateVideoWithModel(req.Prompt, model, params)
+	// 调用视频生成服务 - 统一在service层处理复杂逻辑
+	result, err := common.GenerateVideoByType(req.To, req.Prompt, req.ImgURL)
 	if err != nil {
 		global.Errlog.Error(r.Context(), "视频生成失败: %v", err)
 		utils.FailEncrypt(r, err, "视频生成失败")
