@@ -45,8 +45,7 @@ func (c *ChatController) GetDeviceList(r *ghttp.Request) {
 		return
 	}
 
-	service := &api.MessageService{}
-	list, _, err := service.GetChatUserList(&req)
+	list, _, err := api.GetChatUserList(&req)
 	if err != nil {
 		utils.Fail(r, err, "获取设备列表失败")
 		return
@@ -63,8 +62,7 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 		return
 	}
 
-	service := &api.MessageService{}
-	list, _, err := service.GetChatHistoryByParams(&req)
+	list, _, err := api.GetChatHistoryByParams(&req)
 	if err != nil {
 		utils.Fail(r, err, "获取聊天历史失败")
 		return

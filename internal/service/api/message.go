@@ -18,9 +18,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// MessageService 消息服务结构体
-type MessageService struct{}
-
 // GetChatUserList 获取聊天用户列表（对应PHP的getChatUserList）
 // 参数:
 //   - req: 获取设备列表请求，包含访问密钥和分页参数
@@ -29,7 +26,7 @@ type MessageService struct{}
 //   - list: SecretKey列表，直接返回数据库字段
 //   - total: 符合条件的总记录数
 //   - err: 错误信息
-func (s *MessageService) GetChatUserList(req *models.ChatUserListReq) (list []models.SecretKey, total int64, err error) {
+func GetChatUserList(req *models.ChatUserListReq) (list []models.SecretKey, total int64, err error) {
 	// 参数验证
 	if req.AccessKey == "" {
 		err = fmt.Errorf("访问密钥不能为空")
@@ -96,7 +93,7 @@ func (s *MessageService) GetChatUserList(req *models.ChatUserListReq) (list []mo
 //   - list: 聊天历史记录列表，包含关联的用户信息
 //   - total: 符合条件的总记录数
 //   - err: 错误信息
-func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []map[string]interface{}, total int64, err error) {
+func GetChatHistoryByParams(req *models.ChatHistoryReq) (list []map[string]interface{}, total int64, err error) {
 	// 设置默认聊天类型为群聊
 	if req.ChatType <= 0 {
 		req.ChatType = constant.CHAT_TYPE_GROUP // 默认群聊
