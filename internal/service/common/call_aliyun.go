@@ -530,6 +530,60 @@ func GetAIWorkByTaskID(taskID string) (*models.AiWork, error) {
 	return &aiWork, nil
 }
 
+// GetImageResult 获取图片生成结果
+func GetImageResult(taskID string) (*models.AIGenerateResult, error) {
+	result, err := GetAIWorkByTaskID(taskID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构造响应数据
+	response := &models.AIGenerateResult{
+		TaskID: result.TaskID,
+		Status: models.GetAiWorkStatusName(result.Status),
+		URL:    "",
+	}
+
+	// 如果任务已完成，从work字段中解析URL
+	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+		var work map[string]interface{}
+		if err := json.Unmarshal(result.Work, &work); err == nil {
+			if url, ok := work["url"].(string); ok {
+				response.URL = url
+			}
+		}
+	}
+
+	return response, nil
+}
+
+// GetVideoResult 获取视频生成结果
+func GetVideoResult(taskID string) (*models.AIGenerateResult, error) {
+	result, err := GetAIWorkByTaskID(taskID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构造响应数据
+	response := &models.AIGenerateResult{
+		TaskID: result.TaskID,
+		Status: models.GetAiWorkStatusName(result.Status),
+		URL:    "",
+	}
+
+	// 如果任务已完成，从work字段中解析URL
+	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
+		var work map[string]interface{}
+		if err := json.Unmarshal(result.Work, &work); err == nil {
+			if url, ok := work["url"].(string); ok {
+				response.URL = url
+			}
+		}
+	}
+
+	return response, nil
+}
+
 // UpdateAIWorkStatus 更新AI工作记录状态
 func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{}) error {
 	if taskID == "" {
@@ -563,7 +617,7 @@ func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{})
 
 // GetAiWorkList 获取AI作品列表
 func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRes, error) {
-	const pageSize = 10
+	pageSize := constant.PAGE_SIZE
 
 	// 构建查询条件
 	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{models.AiWorkStatusPending, models.AiWorkStatusProcessing, models.AiWorkStatusCompleted})
@@ -584,7 +638,7 @@ func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRe
 	offset := (page - 1) * pageSize
 	pageCount := int64(0)
 	if total > 0 {
-		pageCount = (total + pageSize - 1) / pageSize
+		pageCount = (total + int64(pageSize) - 1) / int64(pageSize)
 	}
 
 	// 查询列表数据

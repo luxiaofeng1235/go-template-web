@@ -9,7 +9,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"go-web-template/global"
 	"go-web-template/internal/models"
@@ -95,31 +94,14 @@ func (c *AiController) GetImage(r *ghttp.Request) {
 		return
 	}
 
-	// 调用Service层查询任务状态
-	result, err := common.GetAIWorkByTaskID(req.TaskID)
+	// 调用Service层获取图片结果
+	result, err := common.GetImageResult(req.TaskID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取图片结果失败")
 		return
 	}
 
-	// 构造响应数据
-	response := &models.AIGenerateResult{
-		TaskID: result.TaskID,
-		Status: models.GetAiWorkStatusName(result.Status),
-		URL:    "", // 需要从result.Work中解析URL
-	}
-
-	// 如果任务已完成，从work字段中解析URL
-	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
-		var work map[string]interface{}
-		if err := json.Unmarshal(result.Work, &work); err == nil {
-			if url, ok := work["url"].(string); ok {
-				response.URL = url
-			}
-		}
-	}
-
-	utils.Success(r, response, "获取图片结果成功")
+	utils.Success(r, result, "获取图片结果成功")
 }
 
 // ToVideo 生成视频接口
@@ -176,31 +158,14 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 		return
 	}
 
-	// 调用Service层查询任务状态
-	result, err := common.GetAIWorkByTaskID(req.TaskID)
+	// 调用Service层获取视频结果
+	result, err := common.GetVideoResult(req.TaskID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取视频结果失败")
 		return
 	}
 
-	// 构造响应数据
-	response := &models.AIGenerateResult{
-		TaskID: result.TaskID,
-		Status: models.GetAiWorkStatusName(result.Status),
-		URL:    "", // 需要从result.Work中解析URL
-	}
-
-	// 如果任务已完成，从work字段中解析URL
-	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
-		var work map[string]interface{}
-		if err := json.Unmarshal(result.Work, &work); err == nil {
-			if url, ok := work["url"].(string); ok {
-				response.URL = url
-			}
-		}
-	}
-
-	utils.Success(r, response, "获取视频结果成功")
+	utils.Success(r, result, "获取视频结果成功")
 }
 
 // GetAiWorkList 获取AI作品历史记录

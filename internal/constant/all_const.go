@@ -51,3 +51,9 @@ const (
 	TABLE_USER    = "ls_user"
 	TABLE_PRODUCT = "ls_product"
 )
+
+// 分页配置
+const (
+	PAGE_NO   = 1  // 默认页码
+	PAGE_SIZE = 20 // 默认分页大小
+)
