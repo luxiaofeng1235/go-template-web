@@ -207,7 +207,7 @@ func (c *AiController) SendStream2(r *ghttp.Request) {
 
 	// 调用Stream服务处理流式响应
 	streamService := &service.StreamService{}
-	if err := streamService.SendStream2(r.Context(), r, req); err != nil {
+	if err := streamService.SendStream2(r, req); err != nil {
 		global.Errlog.Error(r.Context(), "流式响应失败: %v", err)
 		utils.FailEncrypt(r, err, "流式响应失败")
 		return
