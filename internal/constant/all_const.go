@@ -6,7 +6,7 @@ const (
 	SUCCESS_CODE_200 = 1   //默认200的返回值（预留）
 	ERROR_CODE       = 0   // 服务器错误
 	AUTH_ERROR       = 401 // 认证失败
-	PARAM_ERROR      = 400 // 参数错误
+	PARAM_ERROR      = 0   // 参数错误（统一改为0）
 )
 
 // 用户状态

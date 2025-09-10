@@ -9,7 +9,6 @@
 package controller
 
 import (
-	"fmt"
 	"go-web-template/internal/models"
 	"go-web-template/internal/service/admin"
 	"go-web-template/utils"
@@ -88,7 +87,7 @@ func (c *ProductController) DeleteProduct(r *ghttp.Request) {
 	// 获取商品ID参数
 	productID := r.Get("id").Int64()
 	if productID <= 0 {
-		utils.FailEncrypt(r, fmt.Errorf("商品ID不能为空"), "商品ID不能为空")
+		utils.FailEncrypt(r, nil, "商品ID不能为空")
 		return
 	}
 
