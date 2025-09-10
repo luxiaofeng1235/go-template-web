@@ -141,6 +141,11 @@ func (s *AliyunAIService) ChatCompletion(modelType int, messages []ChatMessage, 
 
 // GenerateImage 生成图片 - toImage方法的Go实现
 func (s *AliyunAIService) GenerateImage(prompt string, options *ImageGenerateParams) (*AliyunAIResponse, error) {
+	return s.GenerateImageWithModel(prompt, constant.IMAGE_MODEL_TURBO, options)
+}
+
+// GenerateImageWithModel 使用指定模型生成图片
+func (s *AliyunAIService) GenerateImageWithModel(prompt string, model string, options *ImageGenerateParams) (*AliyunAIResponse, error) {
 	// 设置默认参数
 	if options == nil {
 		options = &ImageGenerateParams{}
@@ -156,7 +161,7 @@ func (s *AliyunAIService) GenerateImage(prompt string, options *ImageGeneratePar
 	}
 
 	request := ImageGenerateRequest{
-		Model: constant.IMAGE_MODEL_WANX,
+		Model: model,
 		Input: ImageGenerateInput{
 			Prompt: prompt,
 		},
@@ -168,6 +173,11 @@ func (s *AliyunAIService) GenerateImage(prompt string, options *ImageGeneratePar
 
 // GenerateVideo 生成视频 - toVideo方法的Go实现
 func (s *AliyunAIService) GenerateVideo(prompt string, options *VideoGenerateParams) (*AliyunAIResponse, error) {
+	return s.GenerateVideoWithModel(prompt, constant.VIDEO_MODEL_T2V_TURBO, options)
+}
+
+// GenerateVideoWithModel 使用指定模型生成视频
+func (s *AliyunAIService) GenerateVideoWithModel(prompt string, model string, options *VideoGenerateParams) (*AliyunAIResponse, error) {
 	// 设置默认参数
 	if options == nil {
 		options = &VideoGenerateParams{}
@@ -183,7 +193,7 @@ func (s *AliyunAIService) GenerateVideo(prompt string, options *VideoGeneratePar
 	}
 
 	request := VideoGenerateRequest{
-		Model: constant.VIDEO_MODEL_COGVIDEOX,
+		Model: model,
 		Input: VideoGenerateInput{
 			Prompt: prompt,
 		},

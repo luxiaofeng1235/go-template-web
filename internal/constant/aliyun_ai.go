@@ -81,8 +81,8 @@ func GetAIModelConfig(modelType int, isDeepReflection bool) AIModelConfig {
 // 图片生成相关常量
 const (
 	// 图片生成模型
-	IMAGE_MODEL_WANX = "wanx-v1"
-	IMAGE_MODEL_FLUX = "flux-schnell"
+	IMAGE_MODEL_TURBO = "wanx2.1-t2i-turbo"
+	IMAGE_MODEL_PLUS  = "wanx2.1-t2i-plus"
 
 	// 图片尺寸
 	IMAGE_SIZE_1024x1024 = "1024*1024"
@@ -97,7 +97,8 @@ const (
 // 视频生成相关常量
 const (
 	// 视频生成模型
-	VIDEO_MODEL_COGVIDEOX = "cogvideox-v1"
+	VIDEO_MODEL_I2V_PLUS = "wanx2.1-i2v-plus"  // 图生视频
+	VIDEO_MODEL_T2V_TURBO = "wanx2.1-t2v-turbo" // 文生视频
 
 	// 视频时长(秒)
 	VIDEO_DURATION_5S  = 5

@@ -48,5 +48,7 @@ func InitRoutes(s *ghttp.Server) {
 		InitFileRoutes(apiGroup)
 		g.Log().Info(ctx, "[API] 注册聊天路由...")
 		InitChatRoutes(apiGroup)
+		g.Log().Info(ctx, "[API] 注册AI生成路由...")
+		InitAiRoutes(apiGroup)
 	}
 }
