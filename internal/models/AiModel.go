@@ -20,10 +20,10 @@ type ToImageReq struct {
 
 // ToVideoReq 生成视频请求参数
 type ToVideoReq struct {
-	UserID  int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
-	To      int    `json:"to" form:"to" v:"required|in:1,2,3#视频类型必须选择|视频类型参数错误"`
-	Prompt  string `json:"prompt" form:"prompt" v:"max-length:500#提示词长度不能超过500字符"`
-	ImgURL  string `json:"img_url" form:"img_url"`
+	UserID int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
+	To     int    `json:"to" form:"to" v:"required|in:1,2,3#视频类型必须选择|视频类型参数错误"`
+	Prompt string `json:"prompt" form:"prompt" v:"max-length:500#提示词长度不能超过500字符"`
+	ImgURL string `json:"img_url" form:"img_url"`
 }
 
 // GetImageReq 获取图片生成结果请求参数
@@ -45,9 +45,21 @@ type AIWorkListReq struct {
 	Type   int `json:"type" form:"type" v:"required|in:1,2,3#类型必须选择|类型参数错误"`
 }
 
-// AIGenerateResult AI生成结果
-type AIGenerateResult struct {
-	TaskID string `json:"task_id"`
-	Status string `json:"status"`
-	URL    string `json:"url,omitempty"`
+// ai搜索的流式输出
+type AIStreamReq struct {
+	Model   int    `json:"model" form:"model" v:"required|between:0,3#模型名称必须输入|模型参数必须在0-3之间"`
+	ChatId  int    `json:"chat_id" form:"chat_id"`
+	Msg     string `json:"msg" form:"msg" v:"required#搜索内容必须输入"`
+	Restart int    `json:"restart" form:"restart"`
+}
+
+// AIImageResult AI图片生成结果
+type AIImageResult struct {
+	Iamge []string `json:"iamge"` // 注意这里是拼写错误的iamge，保持和PHP版本一致
+	Image []string `json:"image"`
+}
+
+// AIVideoResult AI视频生成结果
+type AIVideoResult struct {
+	Video []string `json:"video"`
 }

@@ -57,3 +57,9 @@ const (
 	PAGE_NO   = 1  // 默认页码
 	PAGE_SIZE = 20 // 默认分页大小
 )
+
+// 视频水印配置
+const (
+	WATERMARK_IMAGE_PATH = "public/static/ai_chat/222.png" // 水印图片路径
+	TEMP_VIDEO_DIR       = "temp/videos"                   // 临时视频目录
+)

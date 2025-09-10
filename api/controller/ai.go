@@ -191,3 +191,18 @@ func (c *AiController) GetAiWorkList(r *ghttp.Request) {
 
 	utils.Success(r, result, "获取AI作品列表成功")
 }
+
+func (c *AiController) SendStream2(r *ghttp.Request) {
+	var req *models.AIStreamReq
+	if err := r.Parse(&req); err != nil {
+		utils.FailEncrypt(r, err, "参数解析失败")
+		return
+	}
+
+	if err := g.Validator().Data(req).Run(r.Context()); err != nil {
+		utils.FailEncrypt(r, err, "参数验证失败")
+		return
+	}
+
+	utils.Success(r, req, "参数验证通过")
+}

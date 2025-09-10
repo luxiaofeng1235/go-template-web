@@ -17,7 +17,13 @@ import (
 	"go-web-template/internal/models"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
+
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
 )
 
 // 通用响应结构
@@ -530,18 +536,113 @@ func GetAIWorkByTaskID(taskID string) (*models.AiWork, error) {
 	return &aiWork, nil
 }
 
+// addWatermarkToVideo 为视频添加水印并上传到OSS
+func addWatermarkToVideo(inputVideoURL string) (string, error) {
+	// 创建临时目录
+	if err := os.MkdirAll(constant.TEMP_VIDEO_DIR, 0755); err != nil {
+		return "", fmt.Errorf("创建临时目录失败: %v", err)
+	}
+
+	// 生成临时文件名
+	timestamp := time.Now().UnixNano()
+	inputVideoPath := filepath.Join(constant.TEMP_VIDEO_DIR, fmt.Sprintf("input_%d.mp4", timestamp))
+	outputVideoPath := filepath.Join(constant.TEMP_VIDEO_DIR, fmt.Sprintf("output_%d.mp4", timestamp))
+
+	// 下载原始视频到本地
+	resp, err := http.Get(inputVideoURL)
+	if err != nil {
+		return "", fmt.Errorf("下载视频失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	inputFile, err := os.Create(inputVideoPath)
+	if err != nil {
+		return "", fmt.Errorf("创建临时视频文件失败: %v", err)
+	}
+	defer inputFile.Close()
+
+	_, err = io.Copy(inputFile, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("保存视频文件失败: %v", err)
+	}
+
+	// 构建 FFmpeg 命令，将水印图片叠加到视频右下角
+	// ffmpeg -i input.mp4 -i watermark.png -filter_complex "overlay=W-w-10:H-h-10" output.mp4
+	cmd := exec.Command("ffmpeg",
+		"-i", inputVideoPath,
+		"-i", constant.WATERMARK_IMAGE_PATH,
+		"-filter_complex", "overlay=W-w-10:H-h-10",
+		"-y", // 覆盖输出文件
+		outputVideoPath)
+
+	// 执行命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		global.Errlog.Error("FFmpeg执行失败", "error", err, "output", string(output))
+		return "", fmt.Errorf("视频水印处理失败: %v", err)
+	}
+
+	global.Requestlog.Info("视频水印处理成功", "input", inputVideoURL, "output", outputVideoPath)
+
+	// 创建OSS服务实例上传处理后的视频
+	ossConfig := &OSSConfig{
+		Endpoint:        g.Cfg().MustGet(gctx.New(), "oss.endpoint", "").String(),
+		AccessKeyID:     g.Cfg().MustGet(gctx.New(), "oss.accessKeyId", "").String(),
+		AccessKeySecret: g.Cfg().MustGet(gctx.New(), "oss.accessKeySecret", "").String(),
+		BucketName:      g.Cfg().MustGet(gctx.New(), "oss.bucket", "").String(),
+		Domain:          g.Cfg().MustGet(gctx.New(), "oss.viewDomain", "").String(),
+	}
+
+	ossService, err := NewOSSService(ossConfig)
+	if err != nil {
+		// 清理临时文件
+		os.Remove(inputVideoPath)
+		os.Remove(outputVideoPath)
+		return "", fmt.Errorf("创建OSS服务失败: %v", err)
+	}
+
+	// 读取处理后的视频文件
+	outputFile, err := os.Open(outputVideoPath)
+	if err != nil {
+		// 清理临时文件
+		os.Remove(inputVideoPath)
+		os.Remove(outputVideoPath)
+		return "", fmt.Errorf("打开输出视频文件失败: %v", err)
+	}
+	defer outputFile.Close()
+
+	// 生成视频文件名
+	videoFilename := fmt.Sprintf("ai_videos/watermarked_%d.mp4", timestamp)
+
+	// 上传到OSS
+	uploadResult, err := ossService.UploadFile(outputFile, videoFilename, "video/mp4")
+	if err != nil {
+		// 清理临时文件
+		os.Remove(inputVideoPath)
+		os.Remove(outputVideoPath)
+		return "", fmt.Errorf("上传视频到OSS失败: %v", err)
+	}
+
+	// 清理临时文件
+	os.Remove(inputVideoPath)
+	os.Remove(outputVideoPath)
+
+	global.Requestlog.Info("视频水印处理并上传OSS成功", "input", inputVideoURL, "ossURL", uploadResult.URL)
+
+	return uploadResult.URL, nil
+}
+
 // GetImageResult 获取图片生成结果
-func GetImageResult(taskID string) (*models.AIGenerateResult, error) {
+func GetImageResult(taskID string) (*models.AIImageResult, error) {
 	result, err := GetAIWorkByTaskID(taskID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 构造响应数据
-	response := &models.AIGenerateResult{
-		TaskID: result.TaskID,
-		Status: models.GetAiWorkStatusName(result.Status),
-		URL:    "",
+	response := &models.AIImageResult{
+		Iamge: []string{},
+		Image: []string{},
 	}
 
 	// 如果任务已完成，从work字段中解析URL
@@ -549,7 +650,9 @@ func GetImageResult(taskID string) (*models.AIGenerateResult, error) {
 		var work map[string]interface{}
 		if err := json.Unmarshal(result.Work, &work); err == nil {
 			if url, ok := work["url"].(string); ok {
-				response.URL = url
+				// 保持和PHP版本一致，包含iamge拼写错误和正确的image
+				response.Iamge = []string{url}
+				response.Image = []string{url}
 			}
 		}
 	}
@@ -557,31 +660,267 @@ func GetImageResult(taskID string) (*models.AIGenerateResult, error) {
 	return response, nil
 }
 
-// GetVideoResult 获取视频生成结果
-func GetVideoResult(taskID string) (*models.AIGenerateResult, error) {
+// GetVideoResult 获取视频生成结果 - 匹配PHP版本逻辑
+func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
+	// 获取AI工作记录
 	result, err := GetAIWorkByTaskID(taskID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 构造响应数据
-	response := &models.AIGenerateResult{
-		TaskID: result.TaskID,
-		Status: models.GetAiWorkStatusName(result.Status),
-		URL:    "",
+	response := &models.AIVideoResult{
+		Video: []string{},
 	}
 
-	// 如果任务已完成，从work字段中解析URL
+	// 检查任务状态 - 如果已经完成水印处理（状态为已完成且有work数据），直接返回
 	if result.Status == models.AiWorkStatusCompleted && len(result.Work) > 0 {
 		var work map[string]interface{}
 		if err := json.Unmarshal(result.Work, &work); err == nil {
-			if url, ok := work["url"].(string); ok {
-				response.URL = url
+			// 检查是否已经有处理好的视频URL
+			if urlsInterface, ok := work["video_urls"]; ok {
+				if urls, ok := urlsInterface.([]interface{}); ok && len(urls) > 0 {
+					// 已经处理完成，直接返回OSS URLs
+					videoURLs := make([]string, len(urls))
+					for i, url := range urls {
+						if urlStr, ok := url.(string); ok {
+							videoURLs[i] = urlStr
+						}
+					}
+					response.Video = videoURLs
+					return response, nil
+				}
 			}
 		}
 	}
 
-	return response, nil
+	// 如果正在处理水印中，返回处理中状态
+	if result.Status == models.AiWorkStatusProcessing {
+		return nil, fmt.Errorf("水印正在生成中")
+	}
+
+	// 获取任务详细状态（这里需要调用阿里云API获取任务状态）
+	taskData, err := getTaskStatus(taskID)
+	if err != nil {
+		return nil, fmt.Errorf("获取任务状态失败: %v", err)
+	}
+
+	// 处理不同的任务状态
+	switch taskData.Status {
+	case "OK":
+		// 任务已完成且已有最终结果
+		if len(taskData.Results) > 0 {
+			response.Video = taskData.Results
+			return response, nil
+		}
+		return nil, fmt.Errorf("任务完成但结果为空")
+
+	case "SUCCEEDED":
+		// 视频生成成功，需要进行水印处理
+		videoURL := taskData.VideoURL
+		if videoURL == "" {
+			return nil, fmt.Errorf("数据错误，视频URL为空，请联系管理员")
+		}
+
+		// 更新状态为处理中（水印处理）
+		err = UpdateAIWorkStatus(taskID, models.AiWorkStatusProcessing, nil)
+		if err != nil {
+			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
+		}
+
+		// 为视频添加水印并上传到OSS
+		watermarkedVideoURL, err := addWatermarkToVideo(videoURL)
+		if err != nil {
+			global.Errlog.Error("视频水印处理失败", "taskID", taskID, "url", videoURL, "error", err)
+			// 水印处理失败，恢复为已完成状态
+			UpdateAIWorkStatus(taskID, models.AiWorkStatusCompleted, map[string]interface{}{
+				"error": err.Error(),
+			})
+			return nil, fmt.Errorf("水印添加失败: %v", err)
+		}
+
+		// 保存处理结果到数据库
+		workData := map[string]interface{}{
+			"video_urls": []string{watermarkedVideoURL},
+		}
+		err = UpdateAIWorkStatus(taskID, models.AiWorkStatusCompleted, workData)
+		if err != nil {
+			global.Errlog.Error("更新工作结果失败", "taskID", taskID, "error", err)
+		}
+
+		response.Video = []string{watermarkedVideoURL}
+		return response, nil
+
+	case "FAILED":
+		// 视频生成失败
+		errorMsg := taskData.Message
+		if errorMsg == "" {
+			errorMsg = "视频生成失败"
+		}
+		
+		// 更新数据库状态为失败
+		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
+			"error": errorMsg,
+		})
+		return nil, fmt.Errorf("视频生成失败: %s", errorMsg)
+
+	case "RUNNING", "PENDING", "SUSPENDED":
+		// 视频生成中
+		return nil, fmt.Errorf("视频生成中")
+
+	default:
+		return nil, fmt.Errorf("任务不存在或状态未知")
+	}
+}
+
+// TaskData 阿里云任务状态数据结构
+type TaskData struct {
+	Status   string   `json:"status"`
+	VideoURL string   `json:"video_url"`
+	Results  []string `json:"results"`
+	Message  string   `json:"message"`
+}
+
+// getTaskStatus 获取阿里云任务状态 - 完整实现匹配PHP版本
+func getTaskStatus(taskID string) (*TaskData, error) {
+	// 首先检查数据库中的任务状态
+	aiWork, err := GetAIWorkByTaskID(taskID)
+	if err != nil {
+		return &TaskData{
+			Status:  "NULL",
+			Message: "任务不存在",
+		}, nil
+	}
+
+	// 如果任务状态是已完成(1)，直接返回OK状态
+	if aiWork.Status == models.AiWorkStatusCompleted {
+		var work map[string]interface{}
+		if len(aiWork.Work) > 0 {
+			json.Unmarshal(aiWork.Work, &work)
+		}
+
+		// 检查是否有video_urls（已处理的视频）
+		if urlsInterface, ok := work["video_urls"]; ok {
+			if urls, ok := urlsInterface.([]interface{}); ok && len(urls) > 0 {
+				results := make([]string, len(urls))
+				for i, url := range urls {
+					if urlStr, ok := url.(string); ok {
+						results[i] = urlStr
+					}
+				}
+				return &TaskData{
+					Status:  "OK",
+					Results: results,
+				}, nil
+			}
+		}
+
+		// 检查是否有其他结果格式
+		if resultsInterface, ok := work["results"]; ok {
+			if results, ok := resultsInterface.([]string); ok {
+				return &TaskData{
+					Status:  "OK",
+					Results: results,
+				}, nil
+			}
+		}
+	}
+
+	// 如果任务状态是失败(2)，返回FAILED状态
+	if aiWork.Status == models.AiWorkStatusFailed {
+		var work map[string]interface{}
+		errorMsg := "任务失败"
+		if len(aiWork.Work) > 0 {
+			json.Unmarshal(aiWork.Work, &work)
+			if errMsg, ok := work["error"].(string); ok {
+				errorMsg = errMsg
+			}
+		}
+		return &TaskData{
+			Status:  "FAILED",
+			Message: errorMsg,
+		}, nil
+	}
+
+	// 如果是其他状态（待处理或处理中），调用阿里云API获取最新状态
+	url := fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskID)
+	
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	// 添加认证头
+	req.Header.Set("Authorization", "Bearer sk-OTVwdAIbvI") // 使用PHP中相同的key
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求阿里云API失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		global.Errlog.Error("阿里云API请求失败", "status", resp.StatusCode, "body", string(body))
+		return &TaskData{
+			Status:  "FAILED",
+			Message: "API请求失败",
+		}, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %v", err)
+	}
+
+	var apiResponse struct {
+		Output struct {
+			TaskStatus string `json:"task_status"`
+			VideoURL   string `json:"video_url"`
+			Results    struct {
+				VideoURL string `json:"video_url"`
+			} `json:"results"`
+			Message string `json:"message"`
+		} `json:"output"`
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 处理UNKNOWN状态 - 匹配PHP逻辑
+	if apiResponse.Output.TaskStatus == "UNKNOWN" {
+		// 更新数据库状态为失败
+		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
+			"error": "任务不存在",
+		})
+		return &TaskData{
+			Status:  "FAILED",
+			Message: "任务不存在",
+		}, nil
+	}
+
+	// 构造返回数据
+	taskData := &TaskData{
+		Status:  apiResponse.Output.TaskStatus,
+		Message: apiResponse.Output.Message,
+	}
+
+	// 获取视频URL - 兼容不同的响应格式
+	if apiResponse.Output.VideoURL != "" {
+		taskData.VideoURL = apiResponse.Output.VideoURL
+	} else if apiResponse.Output.Results.VideoURL != "" {
+		taskData.VideoURL = apiResponse.Output.Results.VideoURL
+	}
+
+	return taskData, nil
 }
 
 // UpdateAIWorkStatus 更新AI工作记录状态
