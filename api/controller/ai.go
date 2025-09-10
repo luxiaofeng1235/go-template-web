@@ -10,6 +10,7 @@ package controller
 
 import (
 	"fmt"
+	"go-web-template/api/service"
 	"go-web-template/global"
 	"go-web-template/internal/models"
 	"go-web-template/internal/service/common"
@@ -204,5 +205,11 @@ func (c *AiController) SendStream2(r *ghttp.Request) {
 		return
 	}
 
-	utils.Success(r, req, "参数验证通过")
+	// 调用Stream服务处理流式响应
+	streamService := &service.StreamService{}
+	if err := streamService.SendStream2(r.Context(), r, req); err != nil {
+		global.Errlog.Error(r.Context(), "流式响应失败: %v", err)
+		utils.FailEncrypt(r, err, "流式响应失败")
+		return
+	}
 }
