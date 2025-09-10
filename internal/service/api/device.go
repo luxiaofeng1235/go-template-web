@@ -286,17 +286,22 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 	if req.AccessKey == "" {
 		return nil, fmt.Errorf("访问密钥不能为空")
 	}
-	// 准备更新数据
+	// 准备更新数据，使用 TrimSpace 过滤空白字符
 	updates := make(map[string]interface{})
 	currentTime := utils.GetUnix()
-	if req.Nickname != "" {
-		updates["nickname"] = req.Nickname
+	
+	nickname := strings.TrimSpace(req.Nickname)
+	avtarURL := strings.TrimSpace(req.AvtarURL)
+	userNote := strings.TrimSpace(req.UserNote)
+	
+	if nickname != "" {
+		updates["nickname"] = nickname
 	}
-	if req.AvtarURL != "" {
-		updates["avtar_url"] = req.AvtarURL
+	if avtarURL != "" {
+		updates["avtar_url"] = avtarURL
 	}
-	if req.UserNote != "" {
-		updates["user_note"] = req.UserNote
+	if userNote != "" {
+		updates["user_note"] = userNote
 	}
 	updates["updated_at"] = currentTime
 
@@ -326,6 +331,11 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 //   - result: 保存结果（按SecretKey格式返回）
 //   - err: 错误信息
 func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]interface{}, error) {
+	// 使用 TrimSpace 过滤空白字符
+	accessKey = strings.TrimSpace(accessKey)
+	toAccessKey = strings.TrimSpace(toAccessKey)
+	userNote = strings.TrimSpace(userNote)
+	
 	if accessKey == "" {
 		return nil, fmt.Errorf("访问密钥不能为空")
 	}
