@@ -11,6 +11,7 @@ package common
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -104,12 +105,21 @@ func (s *OSSService) UploadFile(reader io.Reader, filename string, contentType s
 
 // UploadFileByURL 通过URL上传文件到OSS
 func (s *OSSService) UploadFileByURL(fileURL string, filename string) (*OSSUploadResult, error) {
-	// 从URL下载文件
-	resp, err := oss.GetObjectToFileFromURL(fileURL, "", nil)
+	// 使用HTTP客户端下载文件
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(fileURL)
 	if err != nil {
 		return nil, fmt.Errorf("从URL下载文件失败: %v", err)
 	}
 	defer resp.Body.Close()
+
+	// 检查HTTP状态码
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("下载文件失败，状态码: %d", resp.StatusCode)
+	}
 
 	// 获取内容类型
 	contentType := resp.Header.Get("Content-Type")
