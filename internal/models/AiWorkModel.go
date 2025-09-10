@@ -14,8 +14,8 @@ type AiWork struct {
 	Work       datatypes.JSON `gorm:"column:work" json:"work"`               // 工作内容
 	Type       int8           `gorm:"column:type" json:"type"`               // 类型：1文本生成 2图片生成 3音频生成 4视频生成
 	Status     int8           `gorm:"column:status" json:"status"`           // 状态：0待处理 1处理中 2已完成 3失败
-	CreateTime int64          `gorm:"column:create_time" json:"create_time"` // 创建时间
-	UpdateTime int64          `gorm:"column:update_time" json:"update_time"` // 更新时间
+	CreateTime time.Time      `gorm:"column:create_time" json:"create_time"` // 创建时间
+	UpdateTime time.Time      `gorm:"column:update_time" json:"update_time"` // 更新时间
 }
 
 func (*AiWork) TableName() string {
@@ -30,8 +30,8 @@ type CreateAiWorkReq struct {
 	TaskID     string                 `form:"task_id" json:"task_id"`
 	Params     map[string]interface{} `form:"params" json:"params" `
 	Type       int8                   `form:"type" json:"type" `
-	CreateTime int64                  `form:"create_time" json:"create_time"` // 创建时间
-	UpdateTime int64                  `form:"update_time" json:"update_time"` // 更新时间
+	CreateTime time.Time              `form:"create_time" json:"create_time"` // 创建时间
+	UpdateTime time.Time              `form:"update_time" json:"update_time"` // 更新时间
 }
 
 // UpdateAiWorkReq 更新AI工作任务请求
@@ -70,8 +70,8 @@ type AiWorkRes struct {
 	TypeName   string                 `json:"type_name"`
 	Status     int8                   `json:"status"`
 	StatusName string                 `json:"status_name"`
-	CreateTime int64                  `json:"create_time"`
-	UpdateTime int64                  `json:"update_time"`
+	CreateTime time.Time              `json:"create_time"`
+	UpdateTime time.Time              `json:"update_time"`
 }
 
 // AiWorkListRes AI工作任务列表响应

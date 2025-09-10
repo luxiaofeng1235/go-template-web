@@ -217,13 +217,11 @@ func (c *AiController) GetAiWorkList(r *ghttp.Request) {
 		return
 	}
 
-	// TODO: 实现获取AI作品列表的逻辑
-	// 这里先返回模拟数据
-	result := map[string]interface{}{
-		"total": 0,
-		"list":  []interface{}{},
-		"page":  req.Page,
-		"type":  req.Type,
+	// 调用Service层获取AI作品列表
+	result, err := common.GetAiWorkList(fmt.Sprintf("%d", req.UserID), int8(req.Type), req.Page)
+	if err != nil {
+		utils.FailEncrypt(r, err, "获取AI作品列表失败")
+		return
 	}
 
 	utils.Success(r, result, "获取AI作品列表成功")

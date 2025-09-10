@@ -15,7 +15,6 @@ import (
 	"go-web-template/global"
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
-	"go-web-template/utils"
 	"io"
 	"net/http"
 	"time"
@@ -341,8 +340,8 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 						"watermark": watermark,
 					},
 					Type:       models.AiWorkTypeImage, // 图片生成类型为2
-					CreateTime: utils.GetUnix(),
-					UpdateTime: utils.GetUnix(),
+					CreateTime: time.Now(),
+					UpdateTime: time.Now(),
 				})
 				if err != nil {
 					global.Errlog.Error("保存AI图片生成工作记录失败", "taskID", taskID, "error", err)
@@ -419,8 +418,8 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 						"model":   model,
 					},
 					Type:       models.AiWorkTypeVideo, // 视频生成类型为4
-					CreateTime: utils.GetUnix(),
-					UpdateTime: utils.GetUnix(),
+					CreateTime: time.Now(),
+					UpdateTime: time.Now(),
 				})
 				if err != nil {
 					global.Errlog.Error("保存AI视频生成工作记录失败", "taskID", taskID, "error", err)
@@ -494,7 +493,7 @@ func SaveAIWork(req *models.CreateAiWorkReq) error {
 	}
 
 	// 创建AI工作记录
-	now := utils.GetUnix()
+	now := time.Now()
 	aiWork := models.AiWork{
 		UserID:     req.UserID,
 		TaskID:     req.TaskID,
@@ -539,7 +538,7 @@ func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{})
 
 	updates := map[string]interface{}{
 		"status":      status,
-		"update_time": utils.GetUnix(),
+		"update_time": time.Now(),
 	}
 
 	// 如果有工作结果，则更新
@@ -560,4 +559,87 @@ func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{})
 
 	global.Requestlog.Info("AI工作记录更新成功", "taskID", taskID, "status", status)
 	return nil
+}
+
+// GetAiWorkList 获取AI作品列表
+func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRes, error) {
+	const pageSize = 10
+
+	// 构建查询条件
+	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{models.AiWorkStatusPending, models.AiWorkStatusProcessing, models.AiWorkStatusCompleted})
+
+	// 类型过滤：当type != 3时，增加类型条件
+	if workType != 3 {
+		query = query.Where("type = ?", workType)
+	}
+
+	// 计算总数
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		global.Sqllog.Errorf("查询AI作品总数失败: %v", err)
+		return nil, fmt.Errorf("查询AI作品总数失败")
+	}
+
+	// 计算分页
+	offset := (page - 1) * pageSize
+	pageCount := int64(0)
+	if total > 0 {
+		pageCount = (total + pageSize - 1) / pageSize
+	}
+
+	// 查询列表数据
+	var works []models.AiWork
+	if err := query.Order("id desc").Offset(offset).Limit(pageSize).Find(&works).Error; err != nil {
+		global.Sqllog.Errorf("查询AI作品列表失败: %v", err)
+		return nil, fmt.Errorf("查询AI作品列表失败")
+	}
+
+	// 转换为响应格式
+	workList := make([]models.AiWorkRes, 0, len(works))
+	for _, work := range works {
+		// 解析params和work JSON字段
+		var params map[string]interface{}
+		var workData map[string]interface{}
+
+		if len(work.Params) > 0 {
+			if err := json.Unmarshal(work.Params, &params); err != nil {
+				global.Errlog.Warnf("解析params JSON失败: %v", err)
+				params = make(map[string]interface{})
+			}
+		}
+
+		if len(work.Work) > 0 {
+			if err := json.Unmarshal(work.Work, &workData); err != nil {
+				global.Errlog.Warnf("解析work JSON失败: %v", err)
+				workData = make(map[string]interface{})
+			}
+		}
+
+		workRes := models.AiWorkRes{
+			ID:         work.ID,
+			UserID:     work.UserID,
+			TaskID:     work.TaskID,
+			Params:     params,
+			Work:       workData,
+			Type:       work.Type,
+			TypeName:   models.GetAiWorkTypeName(work.Type),
+			Status:     work.Status,
+			StatusName: models.GetAiWorkStatusName(work.Status),
+			CreateTime: work.CreateTime,
+			UpdateTime: work.UpdateTime,
+		}
+		workList = append(workList, workRes)
+	}
+
+	// 构建响应
+	result := &models.AiWorkListRes{
+		Works:    workList,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+		HasMore:  int64(page) < pageCount,
+	}
+
+	global.Requestlog.Infof("获取AI作品列表成功: userID=%s, type=%d, page=%d, total=%d", userID, workType, page, total)
+	return result, nil
 }
