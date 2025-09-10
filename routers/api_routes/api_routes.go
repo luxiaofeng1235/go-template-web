@@ -10,6 +10,8 @@
 package api_routes
 
 import (
+	"go-web-template/middleware"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -18,6 +20,9 @@ import (
 // InitRoutes 初始化API所有路由
 func InitRoutes(s *ghttp.Server) {
 	ctx := gctx.New()
+
+	// 添加CORS跨域中间件
+	s.Use(middleware.CORS())
 
 	// 添加请求日志中间件
 	s.Use(func(r *ghttp.Request) {
