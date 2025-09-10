@@ -61,14 +61,11 @@ type ChatUserListReq struct {
 
 // ChatHistoryReq 获取聊天历史请求（对应Chat/getChatHistory）
 type ChatHistoryReq struct {
-	SecretKey   string `form:"secret_key" json:"secret_key" v:"required#密钥不能为空"`
-	UserId      int64  `form:"user_id" json:"user_id" v:"required#用户ID不能为空"`
-	ToUserId    int64  `form:"to_user_id" json:"to_user_id" v:"required#对方用户ID不能为空"`
-	PageNum     int    `form:"page_num" json:"page_num"`
-	PageSize    int    `form:"page_size" json:"page_size"`
-	StartTime   int64  `form:"start_time" json:"start_time"`
-	EndTime     int64  `form:"end_time" json:"end_time"`
-	MessageType int8   `form:"message_type" json:"message_type"`
+	AccessKey  string `form:"access_key" json:"access_key"`   // 访问密钥（私聊chat_type=2时他就是发送者了）
+	ReceiverID string `form:"receiver_id" json:"receiver_id"` // chat_type=2私聊时必需，接收者ID
+	ChatType   int8   `form:"chat_type" json:"chat_type"`     // 聊天类型 1=群聊(默认) 2=私聊
+	PageNo     int    `form:"page_no" json:"page_no"`         // 页码
+	PageSize   int    `form:"page_size" json:"page_size"`     // 最大数量，默认20
 }
 
 // 响应结构体

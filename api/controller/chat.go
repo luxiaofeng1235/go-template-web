@@ -76,10 +76,16 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 		return
 	}
 
-	utils.Success(r, map[string]interface{}{
-		"list":     list,
-		"total":    total,
-		"page":     req.PageNum,
-		"pageSize": req.PageSize,
-	}, "获取聊天历史成功")
+	// 根据接口规范返回格式
+	r.Response.WriteJson(map[string]interface{}{
+		"code": 1,
+		"show": 0,
+		"msg":  "聊天历史",
+		"data": map[string]interface{}{
+			"list":     list,
+			"total":    total,
+			"page":     req.PageNo,
+			"pageSize": req.PageSize,
+		},
+	})
 }

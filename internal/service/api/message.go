@@ -14,6 +14,7 @@ import (
 	"go-web-template/global"
 	"go-web-template/internal/models"
 	"go-web-template/utils"
+
 	"gorm.io/gorm"
 )
 
@@ -89,68 +90,81 @@ func (s *MessageService) GetChatUserList(req *models.ChatUserListReq) (list []mo
 
 // GetChatHistoryByParams 根据参数获取聊天历史记录（对应PHP的getChatHistoryByParams）
 // 参数:
-//   - req: 获取聊天历史请求，包含用户ID、对方用户ID、分页等参数
+//   - req: 获取聊天历史请求，支持群聊和私聊两种模式
 //
 // 返回值:
 //   - list: 聊天历史记录列表
 //   - total: 符合条件的总记录数
 //   - err: 错误信息
-func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []models.ChatHistoryRes, total int64, err error) {
-	// 参数验证
-	if req.UserId <= 0 {
-		err = fmt.Errorf("用户ID不能为空")
-		return
-	}
-	if req.ToUserId <= 0 {
-		err = fmt.Errorf("对方用户ID不能为空")
-		return
+func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []models.ChatMessage, total int64, err error) {
+	// 设置默认聊天类型为群聊
+	if req.ChatType <= 0 {
+		req.ChatType = 1 // 默认群聊
 	}
 
 	// 设置默认分页参数
-	if req.PageNum <= 0 {
-		req.PageNum = 1
+	if req.PageNo <= 0 {
+		req.PageNo = 1
 	}
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
 
-	// 构建查询条件 - 查询双向聊天记录
-	db := global.DB.Model(&models.ChatMessage{}).
-		Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))",
-			req.UserId, req.ToUserId, req.ToUserId, req.UserId)
+	// 构建查询条件
+	db := global.DB.Model(&models.ChatMessage{}).Where("chat_type = ?", req.ChatType)
 
-	// 添加时间范围筛选（如果提供）
-	if req.StartTime > 0 {
-		db = db.Where("created_at >= ?", req.StartTime)
-	}
-	if req.EndTime > 0 {
-		db = db.Where("created_at <= ?", req.EndTime)
-	}
+	// 根据聊天类型构建不同的查询条件
+	if req.ChatType == 2 { // 私聊模式
+		// 私聊时需要验证参数
+		if req.AccessKey == "" || req.ReceiverID == "" {
+			err = fmt.Errorf("私聊模式下访问密钥和接收者ID不能为空")
+			return
+		}
 
-	// 添加消息类型筛选（如果提供）
-	if req.MessageType > 0 {
-		db = db.Where("message_type = ?", req.MessageType)
-	}
+		// 验证AccessKey，获取发送者信息
+		var secretKey models.SecretKey
+		err = global.DB.Where("access_key = ? AND status = ?", req.AccessKey, models.SecretKeyStatusNormal).First(&secretKey).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				err = fmt.Errorf("无效的访问密钥")
+				return
+			}
+			global.Errlog.Error("查询访问密钥失败", "accessKey", req.AccessKey, "error", err)
+			return
+		}
 
+		// 查询双向私聊记录（发送者与接收者之间的对话）
+		db = db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))",
+			secretKey.DeviceFingerprint, req.ReceiverID, req.ReceiverID, secretKey.DeviceFingerprint)
+
+	} else { // 群聊模式（chat_type = 1）
+		// 群聊可以不需要特定的发送者和接收者限制，显示所有群聊消息
+		// 如果提供了access_key，可以用于权限验证
+		if req.AccessKey != "" {
+			var secretKey models.SecretKey
+			err = global.DB.Where("access_key = ? AND status = ?", req.AccessKey, models.SecretKeyStatusNormal).First(&secretKey).Error
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					err = fmt.Errorf("无效的访问密钥")
+					return
+				}
+				global.Errlog.Error("查询访问密钥失败", "accessKey", req.AccessKey, "error", err)
+				return
+			}
+		}
+	}
 	// 按时间倒序排列
 	db = db.Order("created_at desc")
-
 	// 统计总条数
 	err = db.Count(&total).Error
 	if err != nil {
-		global.Errlog.Error("查询聊天记录总数失败", "userId", req.UserId, "toUserId", req.ToUserId, "error", err)
+		global.Errlog.Error("查询聊天记录总数失败", "chatType", req.ChatType, "error", err)
 		return
 	}
-
 	// 分页查询
-	if req.PageNum > 0 && req.PageSize > 0 {
-		err = db.Offset((req.PageNum - 1) * req.PageSize).Limit(req.PageSize).Find(&list).Error
-	} else {
-		err = db.Offset(req.PageNum).Find(&list).Error
-	}
-
+	err = db.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&list).Error
 	if err != nil {
-		global.Errlog.Error("查询聊天历史失败", "userId", req.UserId, "toUserId", req.ToUserId, "error", err)
+		global.Errlog.Error("查询聊天历史失败", "chatType", req.ChatType, "error", err)
 		return
 	}
 
@@ -158,13 +172,6 @@ func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (lis
 	if len(list) <= 0 {
 		return list, total, nil
 	}
-
-	// 将结果按时间正序排列（最新消息在最后）
-	for i := 0; i < len(list)/2; i++ {
-		j := len(list) - 1 - i
-		list[i], list[j] = list[j], list[i]
-	}
-
 	return list, total, err
 }
 
@@ -203,7 +210,7 @@ func (s *MessageService) SendMessage(req *models.SendMessageReq) (result *models
 	}
 
 	// 生成消息ID
-	messageId := utils.GenerateMessageId()
+	messageId := utils.GetUUID().String()
 
 	// 创建消息记录
 	now := utils.GetUnix()
