@@ -12,8 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"go-web-template/global"
+	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
-	"go-web-template/utils"
 
 	"gorm.io/gorm"
 )
@@ -99,15 +99,14 @@ func (s *MessageService) GetChatUserList(req *models.ChatUserListReq) (list []mo
 func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (list []models.ChatMessage, total int64, err error) {
 	// 设置默认聊天类型为群聊
 	if req.ChatType <= 0 {
-		req.ChatType = 1 // 默认群聊
+		req.ChatType = constant.CHAT_TYPE_GROUP // 默认群聊
 	}
-
 	// 设置默认分页参数
 	if req.PageNo <= 0 {
-		req.PageNo = 1
+		req.PageNo = constant.PAGE_NO
 	}
 	if req.PageSize <= 0 {
-		req.PageSize = 20
+		req.PageSize = constant.PAGE_SIZE
 	}
 
 	// 构建查询条件
@@ -173,77 +172,4 @@ func (s *MessageService) GetChatHistoryByParams(req *models.ChatHistoryReq) (lis
 		return list, total, nil
 	}
 	return list, total, err
-}
-
-// SendMessage 发送消息
-// 参数:
-//   - req: 发送消息请求，包含发送者、接收者、消息内容等信息
-//
-// 返回值:
-//   - result: 发送结果，包含消息ID等信息
-//   - err: 错误信息
-func (s *MessageService) SendMessage(req *models.SendMessageReq) (result *models.SendMessageRes, err error) {
-	// 参数验证
-	if req.SecretKey == "" {
-		err = fmt.Errorf("密钥不能为空")
-		return
-	}
-	if req.ReceiverID == "" {
-		err = fmt.Errorf("接收者ID不能为空")
-		return
-	}
-	if req.Content == "" && req.MessageType == 1 {
-		err = fmt.Errorf("文本消息内容不能为空")
-		return
-	}
-
-	// 验证SecretKey并获取发送者信息
-	var secretKey models.SecretKey
-	err = global.DB.Where("access_key = ? AND status = ?", req.SecretKey, models.SecretKeyStatusNormal).First(&secretKey).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = fmt.Errorf("无效的密钥")
-			return
-		}
-		global.Errlog.Error("查询密钥失败", "secretKey", req.SecretKey, "error", err)
-		return
-	}
-
-	// 生成消息ID
-	messageId := utils.GetUUID().String()
-
-	// 创建消息记录
-	now := utils.GetUnix()
-	message := models.ChatMessage{
-		MessageID:   messageId,
-		SecretKey:   req.SecretKey,
-		SenderID:    secretKey.DeviceFingerprint,
-		SenderName:  secretKey.Nickname,
-		ReceiverID:  req.ReceiverID,
-		MessageType: req.MessageType,
-		Content:     req.Content,
-		ImageURL:    req.ImageURL,
-		VideoURL:    req.VideoURL,
-		ChatType:    req.ChatType,
-		ExtraData:   req.ExtraData,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	err = global.DB.Create(&message).Error
-	if err != nil {
-		global.Sqllog.Error("创建消息记录失败", "messageId", messageId, "error", err)
-		return
-	}
-
-	result = &models.SendMessageRes{
-		MessageID:   message.ID,
-		UserId:      0, // 根据实际需求调整
-		ToUserId:    0, // 根据实际需求调整
-		Content:     message.Content,
-		MessageType: message.MessageType,
-		CreateTime:  message.CreatedAt,
-	}
-
-	return result, nil
 }
