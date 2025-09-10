@@ -345,9 +345,9 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 						"n":         n,
 						"watermark": watermark,
 					},
-					Type:       models.AiWorkTypeImage, // 图片生成类型为2
-					CreateTime: time.Now(),
-					UpdateTime: time.Now(),
+					Type:       models.AiWorkTypeImage, // 图片生成类型为1
+					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
+					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
 				})
 				if err != nil {
 					global.Errlog.Error("保存AI图片生成工作记录失败", "taskID", taskID, "error", err)
@@ -424,8 +424,8 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 						"model":   model,
 					},
 					Type:       models.AiWorkTypeVideo, // 视频生成类型为4
-					CreateTime: time.Now(),
-					UpdateTime: time.Now(),
+					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
+					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
 				})
 				if err != nil {
 					global.Errlog.Error("保存AI视频生成工作记录失败", "taskID", taskID, "error", err)
@@ -506,8 +506,8 @@ func SaveAIWork(req *models.CreateAiWorkReq) error {
 		Params:     paramsJSON,
 		Type:       req.Type,
 		Status:     models.AiWorkStatusPending, // 待处理状态
-		CreateTime: now,
-		UpdateTime: now,
+		CreateTime: &now,
+		UpdateTime: &now,
 	}
 
 	err = global.DB.Create(&aiWork).Error
@@ -757,7 +757,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 		if errorMsg == "" {
 			errorMsg = "视频生成失败"
 		}
-		
+
 		// 更新数据库状态为失败
 		UpdateAIWorkStatus(taskID, models.AiWorkStatusFailed, map[string]interface{}{
 			"error": errorMsg,
@@ -844,7 +844,7 @@ func getTaskStatus(taskID string) (*TaskData, error) {
 
 	// 如果是其他状态（待处理或处理中），调用阿里云API获取最新状态
 	url := fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskID)
-	
+
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -929,9 +929,10 @@ func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{})
 		return fmt.Errorf("任务ID不能为空")
 	}
 
+	now := time.Now()
 	updates := map[string]interface{}{
 		"status":      status,
-		"update_time": time.Now(),
+		"update_time": &now,
 	}
 
 	// 如果有工作结果，则更新
