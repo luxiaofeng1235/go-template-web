@@ -17,7 +17,6 @@ import (
 	"go-web-template/internal/models"
 	"go-web-template/utils"
 	"strings"
-	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -168,6 +167,7 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 	}
 
 	return &models.CreateSecretResp{
+		Id:        data.ID,
 		AccessKey: accessKey,
 		GROUPID:   groupId,
 		AVTAR_URL: avatarURL,
@@ -221,6 +221,7 @@ func GetOrCreateDeviceAccess(req *models.CreateSecretKeyReq) (*models.CreateSecr
 		}
 
 		return &models.CreateSecretResp{
+			Id:        existing.ID,
 			AccessKey: existing.AccessKey,
 			GROUPID:   existing.GroupID,
 			AVTAR_URL: existing.AvtarURL,
