@@ -13,12 +13,9 @@ import (
 	"fmt"
 	"go-web-template/global"
 	"go-web-template/internal/models"
-	"strconv"
 	"time"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/gogf/gf/v2/os/gtime"
 )
 
 type StreamService struct{}

@@ -31,5 +31,8 @@ func InitAiRoutes(group *ghttp.RouterGroup) {
 		
 		// AI作品历史记录
 		aiGroup.GET("/get_ai_work_list", aiController.GetAiWorkList) // 获取AI作品列表
+		
+		// AI流式搜索
+		aiGroup.POST("/send_stream2", aiController.SendStream2) // 流式AI搜索
 	}
 }
