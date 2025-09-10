@@ -81,14 +81,8 @@ func (c *ChatController) DeviceAuth(r *ghttp.Request) {
 		return
 	}
 
-	// 参数验证
-	if req.DeviceFingerprint == "" {
-		utils.Fail(r, nil, "设备指纹不能为空")
-		return
-	}
-
-	// 调用设备认证逻辑
-	result, err := api.GetOrCreateDeviceAccess(req.DeviceFingerprint, "", req.DeviceInfo)
+	// 调用设备认证逻辑，参数验证在service层处理
+	result, err := api.GetOrCreateDeviceAccess(&req)
 	if err != nil {
 		utils.Fail(r, err, "设备认证失败")
 		return

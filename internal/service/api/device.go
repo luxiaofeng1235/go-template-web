@@ -15,6 +15,7 @@ import (
 	"go-web-template/global"
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
+	"go-web-template/utils"
 	"strings"
 	"time"
 
@@ -74,7 +75,7 @@ func generateUniqueAccessKey(deviceFingerprint, systemSecret string) (string, er
 
 	if count > 0 {
 		// 极小概率重复，使用时间戳重新生成 - 按照PHP版本逻辑
-		timestamp := fmt.Sprintf("%.3f", float64(time.Now().UnixNano())/1e9) // 使用microtime(true)等效
+		timestamp := fmt.Sprintf("%.3f", float64(utils.GetUnixNano())/1e9) // 使用microtime(true)等效
 		hashInput = deviceFingerprint + systemSecret + timestamp
 		hash = fmt.Sprintf("%x", md5.Sum([]byte(hashInput)))
 		accessKey = "AK_" + strings.ToUpper(hash[0:12])
@@ -142,7 +143,7 @@ func GenerateNickname(deviceFingerprint string) string {
 //   - result: 保存结果
 //   - err: 错误信息
 func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInfo string) (*models.CreateSecretResp, error) {
-	currentTime := time.Now().Unix()
+	currentTime := utils.GetUnix()
 	avatarURL := constant.DEFAULT_AVTAR
 
 	data := models.SecretKey{
@@ -155,7 +156,7 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 		FirstVisitTime:    currentTime,
 		LastVisitTime:     currentTime,
 		VisitCount:        1,
-		Status:            int(constant.STATUS_ENABLE),
+		Status:            constant.STATUS_ENABLE,
 		CreatedAt:         currentTime,
 		UpdatedAt:         currentTime,
 	}
@@ -177,31 +178,37 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 
 // GetOrCreateDeviceAccess 根据设备指纹获取或创建设备访问信息
 // 参数:
-//   - deviceFingerprint: 设备指纹
-//   - userInputKey: 用户输入密钥（可选）
-//   - deviceInfo: 设备信息（可选）
+//   - req: 创建密钥请求结构体
 //
 // 返回值:
 //   - result: 设备访问信息
 //   - err: 错误信息
-func GetOrCreateDeviceAccess(deviceFingerprint, userInputKey, deviceInfo string) (*models.CreateSecretResp, error) {
+func GetOrCreateDeviceAccess(req *models.CreateSecretKeyReq) (*models.CreateSecretResp, error) {
+	// 参数验证
+	if req == nil {
+		return nil, fmt.Errorf("请求参数不能为空")
+	}
+	if req.DeviceFingerprint == "" {
+		return nil, fmt.Errorf("设备指纹不能为空")
+	}
+
 	// 先检查设备是否已存在
-	existing, err := GetByDeviceFingerprint(deviceFingerprint)
+	existing, err := GetByDeviceFingerprint(req.DeviceFingerprint)
 	if err != nil {
 		return nil, err
 	}
 
 	if existing != nil {
 		// 使用原子操作更新最后访问时间和访问次数
-		currentTime := time.Now().Unix()
+		currentTime := utils.GetUnix()
 		err = global.DB.Model(&models.SecretKey{}).
-			Where("device_fingerprint = ?", deviceFingerprint).
+			Where("device_fingerprint = ?", req.DeviceFingerprint).
 			UpdateColumn("visit_count", gorm.Expr("visit_count + ?", 1)).Error
 
 		if err == nil {
 			// 然后更新其他字段
 			err = global.DB.Model(&models.SecretKey{}).
-				Where("device_fingerprint = ?", deviceFingerprint).
+				Where("device_fingerprint = ?", req.DeviceFingerprint).
 				Updates(map[string]interface{}{
 					"last_visit_time": currentTime,
 					"updated_at":      currentTime,
@@ -209,7 +216,7 @@ func GetOrCreateDeviceAccess(deviceFingerprint, userInputKey, deviceInfo string)
 		}
 
 		if err != nil {
-			global.Errlog.Error("更新访问信息失败", "deviceFingerprint", deviceFingerprint, "error", err)
+			global.Errlog.Error("更新访问信息失败", "deviceFingerprint", req.DeviceFingerprint, "error", err)
 			return nil, fmt.Errorf("更新访问信息失败")
 		}
 
@@ -223,20 +230,20 @@ func GetOrCreateDeviceAccess(deviceFingerprint, userInputKey, deviceInfo string)
 	}
 
 	// 生成新的访问密钥和群组信息
-	keyMapping, err := GenerateKeyMapping(deviceFingerprint, userInputKey)
+	keyMapping, err := GenerateKeyMapping(req.DeviceFingerprint, "")
 	if err != nil {
 		return nil, err
 	}
 
-	nickname := GenerateNickname(deviceFingerprint)
+	nickname := GenerateNickname(req.DeviceFingerprint)
 
 	// 保存到数据库
 	result, err := SaveDeviceAccess(
-		deviceFingerprint,
+		req.DeviceFingerprint,
 		keyMapping["access_key"],
 		keyMapping["group_id"],
 		nickname,
-		deviceInfo,
+		req.DeviceInfo,
 	)
 	if err != nil {
 		return nil, err

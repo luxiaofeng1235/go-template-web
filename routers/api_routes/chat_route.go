@@ -25,5 +25,5 @@ func InitChatRoutes(apiGroup *ghttp.RouterGroup) {
 	// Chat相关路由（大写C开头，对应PHP的Chat控制器）
 	apiGroup.GET("/chat/getChatHistory", chatCtrl.GetChatHistory) // 获取聊天历史记录接口
 	apiGroup.POST("/chat/deviceAuth", chatCtrl.DeviceAuth)        //认证设备
-	apiGroup.GET("/chat/saveUserData", chatCtrl.SaveUserData)     //保存用户资料
+	apiGroup.POST("/chat/saveUserData", chatCtrl.SaveUserData)    //保存用户资料
 }
