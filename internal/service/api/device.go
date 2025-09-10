@@ -166,7 +166,6 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 		return nil, fmt.Errorf("保存设备访问信息失败")
 	}
 
-
 	return &models.CreateSecretResp{
 		Id:        data.ID,
 		AccessKey: accessKey,
@@ -266,7 +265,7 @@ func SaveUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, error)
 	if req == nil {
 		return nil, fmt.Errorf("请求参数不能为空")
 	}
-	
+
 	// 根据ModType处理不同的保存逻辑
 	switch req.ModType {
 	case 1: // 普通修改（修改自己的信息）
@@ -287,11 +286,9 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 	if req.AccessKey == "" {
 		return nil, fmt.Errorf("访问密钥不能为空")
 	}
-
 	// 准备更新数据
 	updates := make(map[string]interface{})
 	currentTime := utils.GetUnix()
-	
 	if req.Nickname != "" {
 		updates["nickname"] = req.Nickname
 	}
@@ -307,7 +304,7 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 	err := global.DB.Model(&models.SecretKey{}).
 		Where("access_key = ? AND status = ?", req.AccessKey, constant.STATUS_ENABLE).
 		Updates(updates).Error
-	
+
 	if err != nil {
 		global.Errlog.Error("保存用户数据失败", "accessKey", req.AccessKey, "error", err)
 		return nil, fmt.Errorf("保存用户数据失败")
@@ -322,7 +319,7 @@ func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, err
 // saveOnlyUserNote 专门保存好友备注（操作UserNote表，处理好友之间备注同步）
 // 参数:
 //   - accessKey: 操作者的访问密钥
-//   - toAccessKey: 目标用户的访问密钥  
+//   - toAccessKey: 目标用户的访问密钥
 //   - userNote: 备注内容
 //
 // 返回值:
@@ -335,13 +332,11 @@ func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]inter
 	if toAccessKey == "" {
 		return nil, fmt.Errorf("被修改人的访问密钥不能为空")
 	}
-
 	currentTime := utils.GetUnix()
-	
 	// 先检查备注记录是否存在
 	var existingNote models.UserNote
 	err := global.DB.Where("access_key = ? AND to_access_key = ?", accessKey, toAccessKey).First(&existingNote).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		// 创建新备注记录
 		newNote := models.UserNote{
@@ -351,7 +346,7 @@ func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]inter
 			CreatedAt:   currentTime,
 			UpdatedAt:   currentTime,
 		}
-		
+
 		err = global.DB.Create(&newNote).Error
 		if err != nil {
 			global.Errlog.Error("创建用户备注失败", "accessKey", accessKey, "toAccessKey", toAccessKey, "error", err)
@@ -366,7 +361,7 @@ func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]inter
 			"user_note":  userNote,
 			"updated_at": currentTime,
 		}).Error
-		
+
 		if err != nil {
 			global.Errlog.Error("更新用户备注失败", "accessKey", accessKey, "toAccessKey", toAccessKey, "error", err)
 			return nil, fmt.Errorf("更新用户备注失败")
