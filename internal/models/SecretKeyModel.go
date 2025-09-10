@@ -37,3 +37,12 @@ type UpdateSecretKeyReq struct {
 	AccessKey string `form:"access_key" json:"access_key" `
 	CreateSecretKeyReq
 }
+
+// 创建密钥的返回值
+type CreateSecretResp struct {
+	AccessKey string `form:"access_key" json:"access_key" `
+	GROUPID   string `form:"group_id" json:"group_id" `
+	AVTAR_URL string `form:"avtar_url" json:"avtar_url" `
+	NickName  string `form:"nick_name" json:"nick_name" `
+	IsNew     bool   `form:"user_note" json:"user_note" `
+}
