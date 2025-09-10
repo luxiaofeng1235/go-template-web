@@ -15,30 +15,6 @@ import (
 
 // InitUserRoutes 初始化管理后台用户路由
 func InitUserRoutes(adminGroup *ghttp.RouterGroup) {
-	userGroup := adminGroup.Group("/user")
-	{
-		userGroup.GET("/list", func(r *ghttp.Request) {
-			r.Response.WriteJsonExit(map[string]interface{}{
-				"code": 0,
-				"msg":  "success",
-				"data": []map[string]interface{}{
-					{"id": 1, "username": "admin", "email": "admin@example.com"},
-					{"id": 2, "username": "user1", "email": "user1@example.com"},
-				},
-			})
-		})
-
-		userGroup.GET("/info", func(r *ghttp.Request) {
-			r.Response.WriteJsonExit(map[string]interface{}{
-				"code": 0,
-				"msg":  "success",
-				"data": map[string]interface{}{
-					"id":       1,
-					"username": "admin",
-					"email":    "admin@example.com",
-					"status":   1,
-				},
-			})
-		})
-	}
+	// 用户路由已移除，不再需要
+	// 如需用户管理功能，请创建专门的UserController
 }

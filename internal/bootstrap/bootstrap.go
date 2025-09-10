@@ -1,15 +1,16 @@
 package bootstrap
 
 import (
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/olahol/melody"
 	"go-web-template/global"
 	"go-web-template/internal/config"
 	"go-web-template/internal/db"
 	"go-web-template/routers/admin_routes"
 	"go-web-template/routers/api_routes"
 	"log"
+
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/olahol/melody"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -48,6 +49,7 @@ func StartAdminServer() {
 	InitRedis()
 	InitGeoReader()
 	InitBigcache()
+	InitStaticServer() // 初始化静态资源服务
 
 	// 初始化管理后台路由
 	InitAdminRoutes()
@@ -128,7 +130,6 @@ func InitZapLog() {
 }
 
 // ========== 通信相关 ==========
-
 
 // InitWs 初始化WebSocket（API服务专用）
 func InitWs() {

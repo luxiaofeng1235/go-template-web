@@ -73,9 +73,6 @@ func InitRoutes(s *ghttp.Server) {
 			r.Response.ServeFile(path)
 		})
 
-		g.Log().Info(ctx, "[ADMIN] 注册用户路由...")
-		InitUserRoutes(adminGroup)
-
 		g.Log().Info(ctx, "[ADMIN] 注册产品路由...")
 		InitProductRoutes(adminGroup)
 	}
