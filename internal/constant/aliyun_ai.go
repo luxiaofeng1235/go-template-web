@@ -97,15 +97,10 @@ const (
 	// 图片生成模型
 	IMAGE_MODEL_TURBO = "wanx2.1-t2i-turbo"
 	IMAGE_MODEL_PLUS  = "wanx2.1-t2i-plus"
-
 	// 图片尺寸
 	IMAGE_SIZE_1024x1024 = "1024*1024"
-	IMAGE_SIZE_720x1280  = "720*1280"
-	IMAGE_SIZE_1280x720  = "1280*720"
-
 	// 图片格式
-	IMAGE_FORMAT_URL    = "url"
-	IMAGE_FORMAT_BASE64 = "base64"
+	IMAGE_FORMAT_URL = "url"
 )
 
 // 视频生成相关常量
