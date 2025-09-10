@@ -93,7 +93,18 @@ func (c *ChatController) DeviceAuth(r *ghttp.Request) {
 
 // 保存用户资料
 func (c *ChatController) SaveUserData(r *ghttp.Request) {
-	utils.Success(r, map[string]interface{}{
-		"message": "2222222222",
-	}, "保存用户资料")
+	var req models.UpdateUserInfoReq
+	if err := r.Parse(&req); err != nil {
+		utils.Fail(r, err, "参数解析失败")
+		return
+	}
+
+	// 调用保存用户数据逻辑，参数验证在service层处理
+	result, err := api.SaveUserData(&req)
+	if err != nil {
+		utils.Fail(r, err, "保存用户资料失败")
+		return
+	}
+
+	utils.Success(r, result, "保存用户资料成功")
 }

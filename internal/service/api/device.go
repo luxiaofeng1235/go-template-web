@@ -166,8 +166,6 @@ func SaveDeviceAccess(deviceFingerprint, accessKey, groupId, nickname, deviceInf
 		return nil, fmt.Errorf("保存设备访问信息失败")
 	}
 
-	// 确保获取到正确的ID
-	global.Errlog.Info("设备创建成功", "deviceFingerprint", deviceFingerprint, "id", data.ID)
 
 	return &models.CreateSecretResp{
 		Id:        data.ID,
@@ -254,4 +252,144 @@ func GetOrCreateDeviceAccess(req *models.CreateSecretKeyReq) (*models.CreateSecr
 	}
 
 	return result, nil
+}
+
+// SaveUserData 保存用户数据
+// 参数:
+//   - req: 更新用户信息请求结构体
+//
+// 返回值:
+//   - result: 保存结果
+//   - err: 错误信息
+func SaveUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, error) {
+	// 参数验证
+	if req == nil {
+		return nil, fmt.Errorf("请求参数不能为空")
+	}
+	
+	// 根据ModType处理不同的保存逻辑
+	switch req.ModType {
+	case 1: // 普通修改（修改自己的信息）
+		return saveOwnUserData(req)
+	case 2: // 备注修改（修改他人的备注）
+		// 当不为空需要修改好友之间的备注的同步
+		if req.ToAccessKey != "" {
+			return saveOnlyUserNote(req.AccessKey, req.ToAccessKey, req.UserNote)
+		}
+		return nil, fmt.Errorf("备注修改模式下目标用户访问密钥不能为空")
+	default:
+		return saveOwnUserData(req) // 默认按普通修改处理
+	}
+}
+
+// saveOwnUserData 保存自己的用户数据
+func saveOwnUserData(req *models.UpdateUserInfoReq) (map[string]interface{}, error) {
+	if req.AccessKey == "" {
+		return nil, fmt.Errorf("访问密钥不能为空")
+	}
+
+	// 准备更新数据
+	updates := make(map[string]interface{})
+	currentTime := utils.GetUnix()
+	
+	if req.Nickname != "" {
+		updates["nickname"] = req.Nickname
+	}
+	if req.AvtarURL != "" {
+		updates["avtar_url"] = req.AvtarURL
+	}
+	if req.UserNote != "" {
+		updates["user_note"] = req.UserNote
+	}
+	updates["updated_at"] = currentTime
+
+	// 更新数据库
+	err := global.DB.Model(&models.SecretKey{}).
+		Where("access_key = ? AND status = ?", req.AccessKey, constant.STATUS_ENABLE).
+		Updates(updates).Error
+	
+	if err != nil {
+		global.Errlog.Error("保存用户数据失败", "accessKey", req.AccessKey, "error", err)
+		return nil, fmt.Errorf("保存用户数据失败")
+	}
+
+	return map[string]interface{}{
+		"success": true,
+		"message": "用户数据保存成功",
+	}, nil
+}
+
+// saveOnlyUserNote 专门保存好友备注（操作UserNote表，处理好友之间备注同步）
+// 参数:
+//   - accessKey: 操作者的访问密钥
+//   - toAccessKey: 目标用户的访问密钥  
+//   - userNote: 备注内容
+//
+// 返回值:
+//   - result: 保存结果（按SecretKey格式返回）
+//   - err: 错误信息
+func saveOnlyUserNote(accessKey, toAccessKey, userNote string) (map[string]interface{}, error) {
+	if accessKey == "" {
+		return nil, fmt.Errorf("访问密钥不能为空")
+	}
+	if toAccessKey == "" {
+		return nil, fmt.Errorf("被修改人的访问密钥不能为空")
+	}
+
+	currentTime := utils.GetUnix()
+	
+	// 先检查备注记录是否存在
+	var existingNote models.UserNote
+	err := global.DB.Where("access_key = ? AND to_access_key = ?", accessKey, toAccessKey).First(&existingNote).Error
+	
+	if err == gorm.ErrRecordNotFound {
+		// 创建新备注记录
+		newNote := models.UserNote{
+			AccessKey:   accessKey,
+			ToAccessKey: toAccessKey,
+			UserNote:    userNote,
+			CreatedAt:   currentTime,
+			UpdatedAt:   currentTime,
+		}
+		
+		err = global.DB.Create(&newNote).Error
+		if err != nil {
+			global.Errlog.Error("创建用户备注失败", "accessKey", accessKey, "toAccessKey", toAccessKey, "error", err)
+			return nil, fmt.Errorf("创建用户备注失败")
+		}
+	} else if err != nil {
+		global.Errlog.Error("查询用户备注失败", "accessKey", accessKey, "toAccessKey", toAccessKey, "error", err)
+		return nil, fmt.Errorf("查询用户备注失败")
+	} else {
+		// 更新现有备注记录
+		err = global.DB.Model(&existingNote).Updates(map[string]interface{}{
+			"user_note":  userNote,
+			"updated_at": currentTime,
+		}).Error
+		
+		if err != nil {
+			global.Errlog.Error("更新用户备注失败", "accessKey", accessKey, "toAccessKey", toAccessKey, "error", err)
+			return nil, fmt.Errorf("更新用户备注失败")
+		}
+	}
+
+	// 返回格式按照SecretKey模型的格式（查询目标用户信息）
+	var targetUser models.SecretKey
+	err = global.DB.Where("access_key = ? AND status = ?", toAccessKey, constant.STATUS_ENABLE).First(&targetUser).Error
+	if err != nil {
+		global.Errlog.Error("查询目标用户失败", "toAccessKey", toAccessKey, "error", err)
+		return nil, fmt.Errorf("查询目标用户失败")
+	}
+
+	return map[string]interface{}{
+		"success": true,
+		"message": "用户备注保存成功",
+		"user_info": map[string]interface{}{
+			"id":         targetUser.ID,
+			"access_key": targetUser.AccessKey,
+			"nickname":   targetUser.Nickname,
+			"avtar_url":  targetUser.AvtarURL,
+			"user_note":  userNote, // 返回设置的备注
+		},
+	}, nil
 }

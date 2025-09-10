@@ -37,6 +37,16 @@ type UpdateSecretKeyReq struct {
 	CreateSecretKeyReq
 }
 
+// UpdateUserInfoReq 更新用户信息请求
+type UpdateUserInfoReq struct {
+	AccessKey     string `form:"access_key" json:"access_key,omitempty"`         // 访问密钥（原登录用户）
+	Nickname      string `form:"nickname" json:"nickname,omitempty"`             // 用户昵称
+	AvtarURL      string `form:"avtar_url" json:"avtar_url,omitempty"`           // 上传的头像url
+	UserNote      string `form:"user_note" json:"user_note,omitempty"`           // 用户备注
+	ModType       int    `form:"mod_type" json:"mod_type,omitempty"`             // 1:普通修改 2：备注修改
+	ToAccessKey   string `form:"to_access_key" json:"to_access_key,omitempty"`   // 被修改人的access_key，当mod_type=2 必传
+}
+
 // 创建密钥的返回值
 type CreateSecretResp struct {
 	Id        int64  `form:"id" json:"id" `
