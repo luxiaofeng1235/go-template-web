@@ -52,13 +52,7 @@ func (c *ChatController) GetDeviceList(r *ghttp.Request) {
 		return
 	}
 
-	// 根据接口规范返回格式
-	r.Response.WriteJson(map[string]interface{}{
-		"code": 1,
-		"show": 0,
-		"msg":  "用户列表",
-		"data": list,
-	})
+	utils.Success(r, list, "用户列表")
 }
 
 // GetChatHistory 获取聊天历史记录（对应PHP的Chat/getChatHistory）
@@ -70,22 +64,13 @@ func (c *ChatController) GetChatHistory(r *ghttp.Request) {
 	}
 
 	service := &api.MessageService{}
-	list, total, err := service.GetChatHistoryByParams(&req)
+	list, _, err := service.GetChatHistoryByParams(&req)
 	if err != nil {
 		utils.Fail(r, err, "获取聊天历史失败")
 		return
 	}
 
-	// 根据接口规范返回格式
-	r.Response.WriteJson(map[string]interface{}{
-		"code": 1,
-		"show": 0,
-		"msg":  "聊天历史",
-		"data": map[string]interface{}{
-			"list":     list,
-			"total":    total,
-			"page":     req.PageNo,
-			"pageSize": req.PageSize,
-		},
-	})
+	utils.Success(r, map[string]interface{}{
+		"messages": list,
+	}, "聊天历史")
 }
