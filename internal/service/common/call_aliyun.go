@@ -305,7 +305,7 @@ func GenerateImageByModel(modelType int, prompt string, size string, n int, wate
 }
 
 // GenerateImageByModelWithUserAndSize 根据模型生成图片的统一入口方法（包含用户ID和数组格式尺寸）
-func GenerateImageByModelWithUserAndSize(modelType int, prompt string, apiSize string, dbSize []string, n int, watermark string, userID string, originalWatermark int) (*AliyunAIResponse, error) {
+func GenerateImageByModelWithUserAndSize(modelType int, prompt string, apiSize string, dbSize []string, n int, watermark int, userID string) (*AliyunAIResponse, error) {
 	// 创建AI服务实例
 	aiService := NewAliyunAIService()
 	if aiService == nil {
@@ -323,8 +323,8 @@ func GenerateImageByModelWithUserAndSize(modelType int, prompt string, apiSize s
 		model = constant.IMAGE_MODEL_TURBO
 	}
 
-	// 处理watermark参数：字符串 "1" 转为 true，其他为 false
-	watermarkBool := watermark == "1"
+	// 处理watermark参数：整数 1 转为 true，其他为 false
+	watermarkBool := watermark == 1
 
 	// 构建图片生成参数
 	params := &ImageGenerateParams{
@@ -345,11 +345,18 @@ func GenerateImageByModelWithUserAndSize(modelType int, prompt string, apiSize s
 		output, ok := result.Output.(map[string]interface{})
 		if ok {
 			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
-				// 保存AI工作记录到数据库 - 直接使用传入的原始参数
+				// 保存AI工作记录到数据库 - 使用正确的参数格式
 				err = SaveAIWork(&models.CreateAiWorkReq{
 					UserID: userID,
 					TaskID: taskID,
-					Params: originalParams, // 直接使用传入的原始参数，不重新组织
+					Params: map[string]interface{}{
+						"n":         fmt.Sprintf("%d", n),
+						"size":      dbSize, // ["1024", "1024"]
+						"model":     fmt.Sprintf("%d", modelType),
+						"prompt":    prompt,
+						"user_id":   userID,
+						"watermark": fmt.Sprintf("%d", watermark), // 使用原始watermark值
+					},
 					Type:       constant.AiWorkTypeImage, // 图片生成类型为1
 					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
 					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
@@ -732,10 +739,16 @@ func GetImageResult(taskID string, userID string) (*models.AIImageResult, error)
 	if result.Status == constant.AiWorkStatusCompleted && len(result.Work) > 0 {
 		var work map[string]interface{}
 		if err := json.Unmarshal(result.Work, &work); err == nil {
-			if url, ok := work["url"].(string); ok {
-				// 保持和PHP版本一致，包含iamge拼写错误和正确的image
-				response.Iamge = []string{url}
-				response.Image = []string{url}
+			// 直接返回work中的results数组（阿里云URL列表）
+			if results, ok := work["results"].([]interface{}); ok {
+				urls := make([]string, len(results))
+				for i, url := range results {
+					if urlStr, ok := url.(string); ok {
+						urls[i] = urlStr
+					}
+				}
+				response.Iamge = urls
+				response.Image = urls
 				return response, nil
 			}
 		}
@@ -759,39 +772,64 @@ func GetImageResult(taskID string, userID string) (*models.AIImageResult, error)
 		return nil, fmt.Errorf("任务完成但结果为空")
 
 	case "SUCCEEDED":
-		// 图片生成成功，需要下载并保存到本地
-		imageURL := taskData.ImageURL
-		if imageURL == "" {
+		// 图片生成成功，获取完整结果并保存到数据库
+		// 重新调用阿里云API获取完整的results数组
+		url := fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskID)
+		
+		client := &http.Client{Timeout: 30 * time.Second}
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("创建请求失败: %v", err)
+		}
+		
+		req.Header.Set("Authorization", "Bearer "+constant.ALIYUN_AI_API_KEY)
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("请求阿里云API失败: %v", err)
+		}
+		defer resp.Body.Close()
+		
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("读取响应失败: %v", err)
+		}
+		
+		var apiResponse struct {
+			Output struct {
+				Results []struct {
+					URL string `json:"url"`
+				} `json:"results"`
+			} `json:"output"`
+		}
+		
+		if err := json.Unmarshal(body, &apiResponse); err != nil {
+			return nil, fmt.Errorf("解析响应失败: %v", err)
+		}
+		
+		// 提取URL列表
+		var urls []string
+		for _, result := range apiResponse.Output.Results {
+			if result.URL != "" {
+				urls = append(urls, result.URL)
+			}
+		}
+		
+		if len(urls) == 0 {
 			return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
 		}
-
-		// 下载图片并保存到本地
-		localImageURL, err := downloadAndSaveImage(imageURL, taskID)
-		if err != nil {
-			// 下载失败，更新状态为失败
-			workData := map[string]interface{}{
-				"error":  err.Error(),
-				"url":    imageURL,
-				"status": "download_failed",
-			}
-			UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, workData)
-			return nil, fmt.Errorf("图片下载失败: %v", err)
-		}
-
-		// 下载成功，更新状态为已完成
+		
+		// 更新状态为已完成，保存results数组
 		workData := map[string]interface{}{
-			"url":          localImageURL,
-			"original_url": imageURL,
-			"status":       "completed",
+			"results": urls,
 		}
 		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
 		if err != nil {
 			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 		}
 
-		// 返回本地URL
-		response.Iamge = []string{localImageURL}
-		response.Image = []string{localImageURL}
+		// 直接返回阿里云OSS URL列表
+		response.Iamge = urls
+		response.Image = urls
 		return response, nil
 
 	case "FAILED":
