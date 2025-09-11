@@ -71,7 +71,7 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 	imageSize := fmt.Sprintf("%d*%d", width, height)
 
 	// 调用图片生成服务 - 统一在service层处理复杂逻辑
-	result, err := common.GenerateImageByModel(req.Model, req.Prompt, imageSize, req.N, req.Watermark)
+	result, err := common.GenerateImageByModelWithUser(req.Model, req.Prompt, imageSize, req.N, req.Watermark, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		global.Errlog.Error(r.Context(), "图片生成失败: %v", err)
 		utils.FailEncrypt(r, err, "图片生成失败")
@@ -114,7 +114,7 @@ func (c *AiController) GetImage(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取图片结果
-	result, err := common.GetImageResult(req.TaskID)
+	result, err := common.GetImageResult(req.TaskID, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取图片结果失败")
 		return
@@ -153,7 +153,7 @@ func (c *AiController) ToVideo(r *ghttp.Request) {
 	}
 
 	// 调用视频生成服务 - 统一在service层处理复杂逻辑
-	result, err := common.GenerateVideoByType(req.To, req.Prompt, req.ImgURL)
+	result, err := common.GenerateVideoByTypeWithUser(req.To, req.Prompt, req.ImgURL, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		global.Errlog.Error(r.Context(), "视频生成失败: %v", err)
 		utils.FailEncrypt(r, err, "视频生成失败")
@@ -196,7 +196,7 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取视频结果
-	result, err := common.GetVideoResult(req.TaskID)
+	result, err := common.GetVideoResult(req.TaskID, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取视频结果失败")
 		return

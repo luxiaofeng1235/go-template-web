@@ -231,7 +231,7 @@ func (s *AliyunAIService) makeRequest(method, url string, payload interface{}) (
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	
+
 	// 对于图片和视频生成API，需要启用异步模式
 	if strings.Contains(url, "text2image") || strings.Contains(url, "video-generation") {
 		req.Header.Set("X-DashScope-Async", "enable")
@@ -325,7 +325,7 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 
 	// 处理watermark参数：字符串 "1" 转为 true，其他为 false
 	watermarkBool := watermark == "1"
-	
+
 	// 构建图片生成参数
 	params := &ImageGenerateParams{
 		Size:      size,
@@ -531,16 +531,19 @@ func SaveAIWork(req *models.CreateAiWorkReq) error {
 	return nil
 }
 
-// GetAIWorkByTaskID 根据TaskID获取AI工作记录
-func GetAIWorkByTaskID(taskID string) (*models.AiWork, error) {
+// GetAIWorkByTaskID 根据TaskID和UserID获取AI工作记录
+func GetAIWorkByTaskID(taskID string, userID string) (*models.AiWork, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("任务ID不能为空")
 	}
+	if userID == "" {
+		return nil, fmt.Errorf("用户ID不能为空")
+	}
 
 	var aiWork models.AiWork
-	err := global.DB.Where("task_id = ?", taskID).First(&aiWork).Error
+	err := global.DB.Where("task_id = ? AND user_id = ?", taskID, userID).First(&aiWork).Error
 	if err != nil {
-		global.Sqllog.Error("查询AI工作记录失败", "taskID", taskID, "error", err)
+		global.Sqllog.Error("查询AI工作记录失败", "taskID", taskID, "userID", userID, "error", err)
 		return nil, fmt.Errorf("工作记录不存在")
 	}
 
@@ -644,9 +647,9 @@ func addWatermarkToVideo(inputVideoURL string) (string, error) {
 }
 
 // GetImageResult 获取图片生成结果 - 按照PHP版本逻辑实现完整状态管理
-func GetImageResult(taskID string) (*models.AIImageResult, error) {
+func GetImageResult(taskID string, userID string) (*models.AIImageResult, error) {
 	// 获取AI工作记录
-	result, err := GetAIWorkByTaskID(taskID)
+	result, err := GetAIWorkByTaskID(taskID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -671,7 +674,7 @@ func GetImageResult(taskID string) (*models.AIImageResult, error) {
 	}
 
 	// 获取任务详细状态（调用阿里云API获取任务状态）
-	taskData, err := getImageTaskStatus(taskID)
+	taskData, err := getImageTaskStatus(taskID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取任务状态失败: %v", err)
 	}
@@ -749,9 +752,9 @@ func GetImageResult(taskID string) (*models.AIImageResult, error) {
 }
 
 // GetVideoResult 获取视频生成结果 - 匹配PHP版本逻辑
-func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
+func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error) {
 	// 获取AI工作记录
-	result, err := GetAIWorkByTaskID(taskID)
+	result, err := GetAIWorkByTaskID(taskID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -788,7 +791,7 @@ func GetVideoResult(taskID string) (*models.AIVideoResult, error) {
 	}
 
 	// 获取任务详细状态（这里需要调用阿里云API获取任务状态）
-	taskData, err := getTaskStatus(taskID)
+	taskData, err := getTaskStatus(taskID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取任务状态失败: %v", err)
 	}
@@ -870,9 +873,9 @@ type TaskData struct {
 }
 
 // getTaskStatus 获取阿里云任务状态 - 完整实现匹配PHP版本
-func getTaskStatus(taskID string) (*TaskData, error) {
+func getTaskStatus(taskID string, userID string) (*TaskData, error) {
 	// 首先检查数据库中的任务状态
-	aiWork, err := GetAIWorkByTaskID(taskID)
+	aiWork, err := GetAIWorkByTaskID(taskID, userID)
 	if err != nil {
 		return &TaskData{
 			Status:  "NULL",
@@ -1020,9 +1023,9 @@ type ImageTaskData struct {
 }
 
 // getImageTaskStatus 获取图片任务状态 - 专门用于图片生成
-func getImageTaskStatus(taskID string) (*ImageTaskData, error) {
+func getImageTaskStatus(taskID string, userID string) (*ImageTaskData, error) {
 	// 首先检查数据库中的任务状态
-	aiWork, err := GetAIWorkByTaskID(taskID)
+	aiWork, err := GetAIWorkByTaskID(taskID, userID)
 	if err != nil {
 		return &ImageTaskData{
 			Status:  "NULL",
