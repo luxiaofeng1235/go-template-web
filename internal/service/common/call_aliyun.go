@@ -511,7 +511,7 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
 				// 保存AI工作记录到数据库 - 与PHP版本格式保持一致
 				params := map[string]interface{}{
-					"to":     toType, // 直接存整数，与PHP版本一致
+					"to":     fmt.Sprintf("%d", toType), // 转为字符串，与PHP版本保持一致
 					"prompt": prompt,
 				}
 				// 只有当img_url不为空时才添加，避免空字符串
