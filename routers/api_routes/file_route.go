@@ -19,6 +19,6 @@ func InitFileRoutes(apiGroup *ghttp.RouterGroup) {
 	fileCtrl := &controller.FileController{}
 
 	// 直接在file路径下定义接口
-	apiGroup.POST("/file/formimage", fileCtrl.FormImage) // 图片上传接口
-	apiGroup.POST("/file/formvideo", fileCtrl.FormVideo) // 视频上传接口
+	apiGroup.POST("/file/formImage", fileCtrl.FormImage) // 图片上传接口
+	apiGroup.POST("/file/formVideo", fileCtrl.FormVideo) // 视频上传接口
 }

@@ -70,8 +70,15 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 	// 构建图片尺寸字符串
 	imageSize := fmt.Sprintf("%d*%d", width, height)
 
+	// 设置默认水印（如果没有提供）
+	watermark := ""
+	if req.Watermark == 1 {
+		watermark = "default_watermark_url" // 如果选择添加水印，使用默认水印
+	}
+	// 其他情况（0, 2 或不传）都默认不添加水印
+
 	// 调用图片生成服务 - 统一在service层处理复杂逻辑
-	result, err := common.GenerateImageByModelWithUser(req.Model, req.Prompt, imageSize, req.N, req.Watermark, fmt.Sprintf("%d", req.UserID))
+	result, err := common.GenerateImageByModelWithUser(req.Model, req.Prompt, imageSize, req.N, watermark, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		global.Errlog.Error(r.Context(), "图片生成失败: %v", err)
 		utils.FailEncrypt(r, err, "图片生成失败")

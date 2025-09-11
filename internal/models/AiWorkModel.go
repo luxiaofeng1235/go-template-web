@@ -87,11 +87,12 @@ type CreateAiWorkRes struct {
 // ToImageReq 生成图片请求参数
 type ToImageReq struct {
 	UserID    int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
-	Model     int    `json:"model" form:"model" v:"required|in:1,2#模型必须选择|模型参数错误"`
+	Model     int    `json:"model" form:"model" v:"required|in:1,2#模型必须选择|模型参数错误：1高速模型，2细节模型"`
 	Prompt    string `json:"prompt" form:"prompt" v:"required|max-length:500#提示词必须输入|提示词长度不能超过500字符"`
 	Size      string `json:"size" form:"size" v:"required#图片尺寸必须选择"`
 	N         int    `json:"n" form:"n" v:"required|between:1,4#生成数量必须输入|生成数量必须在1-4之间"`
-	Watermark string `json:"watermark" form:"watermark" v:"required#水印URL必须输入"`
+	Watermark int    `json:"watermark" form:"watermark"` // 是否添加水印：1添加，2不添加（默认），可选参数
+	Image     string `json:"image" form:"image"` // 图生图时传的参数，只能传单张，可选
 }
 
 // ToVideoReq 生成视频请求参数
