@@ -102,16 +102,10 @@ type ToVideoReq struct {
 	ImgURL string `json:"img_url" form:"img_url"`
 }
 
-// GetImageReq 获取图片生成结果请求参数
-type GetImageReq struct {
-	UserID int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
-	TaskID string `json:"task_id" form:"task_id" v:"required#任务ID必须输入"`
-}
-
-// GetVideoReq 获取视频生成结果请求参数
-type GetVideoReq struct {
-	UserID int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
-	TaskID string `json:"task_id" form:"task_id" v:"required#任务ID必须输入"`
+// GetTaskResultReq 获取任务结果的统一请求参数（图片和视频通用）
+type GetTaskResultReq struct {
+	ChatId string `json:"chat_id" form:"chat_id" v:"required#聊天ID必须输入"`
+	UserID string `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
 }
 
 // AIWorkListReq AI作品列表请求参数

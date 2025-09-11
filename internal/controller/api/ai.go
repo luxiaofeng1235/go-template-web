@@ -101,7 +101,7 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 
 // GetImage 获取图片生成结果
 func (c *AiController) GetImage(r *ghttp.Request) {
-	var req *models.GetImageReq
+	var req *models.GetTaskResultReq
 	if err := r.Parse(&req); err != nil {
 		utils.FailEncrypt(r, err, "参数解析失败")
 		return
@@ -114,7 +114,7 @@ func (c *AiController) GetImage(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取图片结果
-	result, err := common.GetImageResult(req.TaskID, fmt.Sprintf("%d", req.UserID))
+	result, err := common.GetImageResult(req.ChatId, req.UserID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取图片结果失败")
 		return
@@ -183,7 +183,7 @@ func (c *AiController) ToVideo(r *ghttp.Request) {
 
 // GetVideo 获取视频生成结果
 func (c *AiController) GetVideo(r *ghttp.Request) {
-	var req *models.GetVideoReq
+	var req *models.GetTaskResultReq
 	if err := r.Parse(&req); err != nil {
 		utils.FailEncrypt(r, err, "参数解析失败")
 		return
@@ -196,7 +196,7 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取视频结果
-	result, err := common.GetVideoResult(req.TaskID, fmt.Sprintf("%d", req.UserID))
+	result, err := common.GetVideoResult(req.ChatId, req.UserID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取视频结果失败")
 		return

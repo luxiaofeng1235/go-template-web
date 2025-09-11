@@ -540,13 +540,20 @@ func GetAIWorkByTaskID(taskID string, userID string) (*models.AiWork, error) {
 		return nil, fmt.Errorf("用户ID不能为空")
 	}
 
+	// 添加调试信息
+	global.Requestlog.Info("GetAIWorkByTaskID查询参数", "taskID", taskID, "userID", userID)
+	fmt.Printf("GetAIWorkByTaskID查询参数: taskID=%s, userID=%s\n", taskID, userID)
+
 	var aiWork models.AiWork
 	err := global.DB.Where("task_id = ? AND user_id = ?", taskID, userID).First(&aiWork).Error
 	if err != nil {
 		global.Sqllog.Error("查询AI工作记录失败", "taskID", taskID, "userID", userID, "error", err)
-		return nil, fmt.Errorf("工作记录不存在")
+		fmt.Printf("数据库查询错误: %v\n", err)
+		return nil, fmt.Errorf("工作记录不存在: taskID=%s, userID=%s", taskID, userID)
 	}
 
+	global.Requestlog.Info("查询AI工作记录成功", "taskID", taskID, "userID", userID, "workID", aiWork.ID)
+	fmt.Printf("查询成功: ID=%d, TaskID=%s, UserID=%s\n", aiWork.ID, aiWork.TaskID, aiWork.UserID)
 	return &aiWork, nil
 }
 
