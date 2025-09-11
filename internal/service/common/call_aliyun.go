@@ -723,8 +723,8 @@ func addWatermarkToVideo(inputVideoURL string) (string, error) {
 
 // GetImageResult 获取图片生成结果 - 按照PHP版本逻辑实现完整状态管理
 func GetImageResult(taskID string, userID string) (*models.AIImageResult, error) {
-	// 获取AI工作记录
-	result, err := GetAIWorkByTaskID(taskID, userID)
+	// 使用通用的getTask方法，匹配PHP版本
+	data, err := getTask(taskID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -735,114 +735,78 @@ func GetImageResult(taskID string, userID string) (*models.AIImageResult, error)
 		Image: []string{},
 	}
 
-	// 检查任务状态 - 如果已经完成且有work数据，直接返回
-	if result.Status == constant.AiWorkStatusCompleted && len(result.Work) > 0 {
-		var work map[string]interface{}
-		if err := json.Unmarshal(result.Work, &work); err == nil {
-			// 直接返回work中的results数组（阿里云URL列表）
-			if results, ok := work["results"].([]interface{}); ok {
-				urls := make([]string, len(results))
-				for i, url := range results {
-					if urlStr, ok := url.(string); ok {
-						urls[i] = urlStr
-					}
-				}
-				response.Iamge = urls
-				response.Image = urls
-				return response, nil
-			}
-		}
+	// 解析返回的output
+	output, ok := data["output"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("响应格式错误")
 	}
 
-	// 获取任务详细状态（调用阿里云API获取任务状态）
-	taskData, err := getImageTaskStatus(taskID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("获取任务状态失败: %v", err)
+	taskStatus, ok := output["task_status"].(string)
+	if !ok {
+		return nil, fmt.Errorf("任务状态格式错误")
 	}
 
-	// 处理不同的任务状态 - 按照PHP版本逻辑
-	switch taskData.Status {
+	switch taskStatus {
 	case "OK":
 		// 任务已完成且已有最终结果
-		if len(taskData.Results) > 0 {
-			response.Iamge = taskData.Results
-			response.Image = taskData.Results
-			return response, nil
+		if results, ok := output["results"].(map[string]interface{}); ok {
+			// 从work字段中提取URL数组
+			if urls, exists := results["results"].([]interface{}); exists {
+				urlStrings := make([]string, len(urls))
+				for i, url := range urls {
+					if urlStr, ok := url.(string); ok {
+						urlStrings[i] = urlStr
+					}
+				}
+				response.Iamge = urlStrings
+				response.Image = urlStrings
+				return response, nil
+			}
 		}
 		return nil, fmt.Errorf("任务完成但结果为空")
 
 	case "SUCCEEDED":
-		// 图片生成成功，获取完整结果并保存到数据库
-		// 重新调用阿里云API获取完整的results数组
-		url := fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskID)
-		
-		client := &http.Client{Timeout: 30 * time.Second}
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, fmt.Errorf("创建请求失败: %v", err)
-		}
-		
-		req.Header.Set("Authorization", "Bearer "+constant.ALIYUN_AI_API_KEY)
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("请求阿里云API失败: %v", err)
-		}
-		defer resp.Body.Close()
-		
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("读取响应失败: %v", err)
-		}
-		
-		var apiResponse struct {
-			Output struct {
-				Results []struct {
-					URL string `json:"url"`
-				} `json:"results"`
-			} `json:"output"`
-		}
-		
-		if err := json.Unmarshal(body, &apiResponse); err != nil {
-			return nil, fmt.Errorf("解析响应失败: %v", err)
-		}
-		
-		// 提取URL列表
-		var urls []string
-		for _, result := range apiResponse.Output.Results {
-			if result.URL != "" {
-				urls = append(urls, result.URL)
+		// 图片生成成功，需要下载并上传到OSS
+		if results, ok := output["results"].([]interface{}); ok {
+			var urls []string
+			for _, item := range results {
+				if resultMap, ok := item.(map[string]interface{}); ok {
+					if url, exists := resultMap["url"].(string); exists && url != "" {
+						urls = append(urls, url)
+					}
+				}
 			}
-		}
-		
-		if len(urls) == 0 {
-			return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
-		}
-		
-		// 更新状态为已完成，保存results数组
-		workData := map[string]interface{}{
-			"results": urls,
-		}
-		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
-		if err != nil {
-			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
-		}
 
-		// 直接返回阿里云OSS URL列表
-		response.Iamge = urls
-		response.Image = urls
-		return response, nil
+			if len(urls) == 0 {
+				return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
+			}
+
+			// 更新状态为已完成，保存URL数组
+			workData := map[string]interface{}{
+				"results": urls,
+			}
+			err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
+			if err != nil {
+				global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
+			}
+
+			// 直接返回阿里云OSS URL列表
+			response.Iamge = urls
+			response.Image = urls
+			return response, nil
+		}
+		return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
 
 	case "FAILED":
 		// 任务失败
 		errorMsg := "图片生成失败"
-		if taskData.Message != "" {
-			errorMsg = taskData.Message
+		if message, ok := output["message"].(string); ok && message != "" {
+			errorMsg = message
 		}
 
 		// 更新状态为失败
 		workData := map[string]interface{}{
-			"error":  errorMsg,
-			"status": "failed",
+			"error": errorMsg,
 		}
 		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, workData)
 
@@ -852,15 +816,19 @@ func GetImageResult(taskID string, userID string) (*models.AIImageResult, error)
 		// 任务进行中
 		return nil, fmt.Errorf("图片正在生成中")
 
+	case "NULL":
+		// 任务不存在
+		return nil, fmt.Errorf("任务不存在")
+
 	default:
-		return nil, fmt.Errorf("未知任务状态: %s", taskData.Status)
+		return nil, fmt.Errorf("任务不存在或状态未知")
 	}
 }
 
 // GetVideoResult 获取视频生成结果 - 匹配PHP版本逻辑
 func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error) {
-	// 获取AI工作记录
-	result, err := GetAIWorkByTaskID(taskID, userID)
+	// 使用通用的getTask方法，匹配PHP版本
+	data, err := getTask(taskID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -870,53 +838,51 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 		Video: []string{},
 	}
 
-	// 检查任务状态 - 如果已经完成水印处理（状态为已完成且有work数据），直接返回
-	if result.Status == constant.AiWorkStatusCompleted && len(result.Work) > 0 {
-		var work map[string]interface{}
-		if err := json.Unmarshal(result.Work, &work); err == nil {
-			// 检查是否已经有处理好的视频URL
-			if urlsInterface, ok := work["video_urls"]; ok {
-				if urls, ok := urlsInterface.([]interface{}); ok && len(urls) > 0 {
-					// 已经处理完成，直接返回OSS URLs
-					videoURLs := make([]string, len(urls))
-					for i, url := range urls {
-						if urlStr, ok := url.(string); ok {
-							videoURLs[i] = urlStr
-						}
-					}
-					response.Video = videoURLs
-					return response, nil
-				}
-			}
-		}
+	// 解析返回的output
+	output, ok := data["output"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("响应格式错误")
 	}
 
-	// 如果正在处理水印中，返回处理中状态
-	if result.Status == constant.AiWorkStatusProcessing {
-		return nil, fmt.Errorf("水印正在生成中")
+	taskStatus, ok := output["task_status"].(string)
+	if !ok {
+		return nil, fmt.Errorf("任务状态格式错误")
 	}
 
-	// 获取任务详细状态（这里需要调用阿里云API获取任务状态）
-	taskData, err := getTaskStatus(taskID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("获取任务状态失败: %v", err)
-	}
-
-	// 处理不同的任务状态
-	switch taskData.Status {
+	switch taskStatus {
 	case "OK":
 		// 任务已完成且已有最终结果
-		if len(taskData.Results) > 0 {
-			response.Video = taskData.Results
+		if results, ok := output["results"].([]interface{}); ok {
+			videoURLs := make([]string, len(results))
+			for i, url := range results {
+				if urlStr, ok := url.(string); ok {
+					videoURLs[i] = urlStr
+				}
+			}
+			response.Video = videoURLs
 			return response, nil
 		}
 		return nil, fmt.Errorf("任务完成但结果为空")
 
 	case "SUCCEEDED":
+		// 检查是否正在处理水印（status=3）
+		model, err := GetAIWorkByTaskID(taskID, userID)
+		if err == nil && model.Status == constant.AiWorkStatusProcessing {
+			return nil, fmt.Errorf("水印正在生成中")
+		}
+
 		// 视频生成成功，需要进行水印处理
-		videoURL := taskData.VideoURL
+		var videoURL string
+		if url, ok := output["video_url"].(string); ok && url != "" {
+			videoURL = url
+		} else if results, ok := output["results"].(map[string]interface{}); ok {
+			if url, exists := results["video_url"].(string); exists {
+				videoURL = url
+			}
+		}
+
 		if videoURL == "" {
-			return nil, fmt.Errorf("数据错误，视频URL为空，请联系管理员")
+			return nil, fmt.Errorf("数据错误，请联系管理员")
 		}
 
 		// 更新状态为处理中（水印处理）
@@ -930,16 +896,14 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 		if err != nil {
 			global.Errlog.Error("视频水印处理失败", "taskID", taskID, "url", videoURL, "error", err)
 			// 水印处理失败，恢复为已完成状态
-			UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, map[string]interface{}{
+			UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 				"error": err.Error(),
 			})
 			return nil, fmt.Errorf("水印添加失败: %v", err)
 		}
 
 		// 保存处理结果到数据库
-		workData := map[string]interface{}{
-			"video_urls": []string{watermarkedVideoURL},
-		}
+		workData := []string{watermarkedVideoURL}
 		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
 		if err != nil {
 			global.Errlog.Error("更新工作结果失败", "taskID", taskID, "error", err)
@@ -950,20 +914,24 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 
 	case "FAILED":
 		// 视频生成失败
-		errorMsg := taskData.Message
-		if errorMsg == "" {
-			errorMsg = "视频生成失败"
+		errorMsg := "视频生成失败"
+		if message, ok := output["message"].(string); ok && message != "" {
+			errorMsg = message
 		}
 
 		// 更新数据库状态为失败
 		UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 			"error": errorMsg,
 		})
-		return nil, fmt.Errorf("视频生成失败: %s", errorMsg)
+		return nil, fmt.Errorf(errorMsg)
 
 	case "RUNNING", "PENDING", "SUSPENDED":
 		// 视频生成中
 		return nil, fmt.Errorf("视频生成中")
+
+	case "NULL":
+		// 任务不存在
+		return nil, fmt.Errorf("任务不存在")
 
 	default:
 		return nil, fmt.Errorf("任务不存在或状态未知")
@@ -978,7 +946,115 @@ type TaskData struct {
 	Message  string   `json:"message"`
 }
 
-// getTaskStatus 获取阿里云任务状态 - 完整实现匹配PHP版本
+// getTask 获取任务状态 - 通用方法，匹配PHP版本的getTask方法
+func getTask(taskID string, userID string) (map[string]interface{}, error) {
+	// 首先检查数据库中的任务状态
+	aiWork, err := GetAIWorkByTaskID(taskID, userID)
+	if err != nil {
+		return map[string]interface{}{
+			"output": map[string]interface{}{
+				"task_status": "NULL",
+				"message":     "任务不存在",
+			},
+		}, nil
+	}
+
+	// 如果任务状态是已完成(2)，直接返回OK状态
+	if aiWork.Status == constant.AiWorkStatusCompleted {
+		var work map[string]interface{}
+		if len(aiWork.Work) > 0 {
+			json.Unmarshal(aiWork.Work, &work)
+		}
+		
+		return map[string]interface{}{
+			"output": map[string]interface{}{
+				"task_status": "OK",
+				"results":     work,
+			},
+		}, nil
+	}
+
+	// 如果任务状态是失败(3)，返回FAILED状态
+	if aiWork.Status == constant.AiWorkStatusFailed {
+		var work map[string]interface{}
+		errorMsg := "任务失败"
+		if len(aiWork.Work) > 0 {
+			json.Unmarshal(aiWork.Work, &work)
+			if errMsg, ok := work["error"].(string); ok {
+				errorMsg = errMsg
+			}
+		}
+		return map[string]interface{}{
+			"output": map[string]interface{}{
+				"task_status": "FAILED",
+				"message":     errorMsg,
+			},
+		}, nil
+	}
+
+	// 如果是其他状态（待处理或处理中），调用阿里云API获取最新状态
+	url := fmt.Sprintf("https://dashscope.aliyuncs.com/api/v1/tasks/%s", taskID)
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	// 添加认证头
+	req.Header.Set("Authorization", "Bearer "+constant.ALIYUN_AI_API_KEY)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求阿里云API失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		global.Errlog.Error("阿里云API请求失败", "status", resp.StatusCode, "body", string(body))
+		return map[string]interface{}{
+			"output": map[string]interface{}{
+				"task_status": "FAILED",
+				"message":     "API请求失败",
+			},
+		}, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %v", err)
+	}
+
+	var apiResponse map[string]interface{}
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 处理UNKNOWN状态 - 匹配PHP逻辑
+	if output, ok := apiResponse["output"].(map[string]interface{}); ok {
+		if taskStatus, exists := output["task_status"]; exists && taskStatus == "UNKNOWN" {
+			// 更新数据库状态为失败
+			UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
+				"error": "任务不存在",
+			})
+			return map[string]interface{}{
+				"output": map[string]interface{}{
+					"task_status": "FAILED",
+					"message":     "任务不存在",
+				},
+			}, nil
+		}
+	}
+
+	return apiResponse, nil
+}
+
+// getTaskStatus 获取阿里云任务状态 - 完整实现匹配PHP版本（保持向后兼容）
 func getTaskStatus(taskID string, userID string) (*TaskData, error) {
 	// 首先检查数据库中的任务状态
 	aiWork, err := GetAIWorkByTaskID(taskID, userID)
