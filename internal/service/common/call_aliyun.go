@@ -928,7 +928,7 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 	case "SUCCEEDED":
 		// 检查是否正在处理水印（status=3）
 		model, err := GetAIWorkByTaskID(taskID, userID)
-		if err == nil && model.Status == constant.AiWorkStatusProcessing {
+		if err == nil && model.Status == constant.AiWorkStatusWatermark {
 			return nil, fmt.Errorf("水印正在生成中")
 		}
 
@@ -946,8 +946,8 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 			return nil, fmt.Errorf("数据错误，请联系管理员")
 		}
 
-		// 更新状态为处理中（水印处理）
-		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusProcessing, nil)
+		// 更新状态为水印处理中（status=3）
+		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusWatermark, nil)
 		if err != nil {
 			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 		}

@@ -30,7 +30,7 @@ const (
 	AiWorkStatusProcessing int8 = 0 // 生成中
 	AiWorkStatusCompleted  int8 = 1 // 已生成
 	AiWorkStatusFailed     int8 = 2 // 生成失败
-	AiWorkStatusDeleted    int8 = 3 // 已删除
+	AiWorkStatusWatermark  int8 = 3 // 水印处理中（视频专用，对应PHP的status=3）
 )
 
 // AI模型类型常量
