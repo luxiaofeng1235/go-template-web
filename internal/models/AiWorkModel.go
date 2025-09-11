@@ -105,7 +105,7 @@ type ToVideoReq struct {
 
 // GetTaskResultReq 获取任务结果的统一请求参数（图片和视频通用）
 type GetTaskResultReq struct {
-	ChatId string `json:"chat_id" form:"chat_id" v:"required#聊天ID必须输入"`
+	TaskId string `json:"task_id" form:"task_id" v:"required#任务ID必须输入"`
 	UserID string `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
 }
 

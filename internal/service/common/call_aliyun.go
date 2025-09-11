@@ -647,7 +647,53 @@ func GetAIWorkByTaskID(taskID string, userID string) (*models.AiWork, error) {
 }
 
 // addWatermarkToVideo 为视频添加水印并上传到OSS
-func addWatermarkToVideo(inputVideoURL string) (string, error) {
+// findAvailableFFmpeg 智能查找可用的FFmpeg可执行文件
+func findAvailableFFmpeg() string {
+	// 查找顺序：本地项目 -> 系统PATH
+	candidates := []string{
+		"./ffmpeg.exe",           // 当前目录
+		"ffmpeg.exe",             // 当前目录
+		"bin/ffmpeg.exe",         // bin目录
+		"tools/ffmpeg.exe",       // tools目录
+		"ffmpeg",                 // 系统PATH（Linux/Mac）
+		"ffmpeg.exe",             // 系统PATH（Windows）
+	}
+	
+	for _, candidate := range candidates {
+		if err := exec.Command(candidate, "-version").Run(); err == nil {
+			global.Requestlog.Info("找到可用的FFmpeg", "path", candidate)
+			return candidate
+		}
+	}
+	
+	global.Requestlog.Warn("未找到可用的FFmpeg")
+	return ""
+}
+
+// copyVideoFile 复制视频文件（FFmpeg不可用时的备选方案）
+func copyVideoFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("打开源文件失败: %v", err)
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("创建目标文件失败: %v", err)
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return fmt.Errorf("复制文件内容失败: %v", err)
+	}
+
+	global.Requestlog.Info("视频文件复制成功", "src", src, "dst", dst)
+	return nil
+}
+
+func AddWatermarkToVideo(inputVideoURL string) (string, error) {
 	// 创建临时目录
 	if err := os.MkdirAll(constant.TEMP_VIDEO_DIR, 0755); err != nil {
 		return "", fmt.Errorf("创建临时目录失败: %v", err)
@@ -669,30 +715,71 @@ func addWatermarkToVideo(inputVideoURL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("创建临时视频文件失败: %v", err)
 	}
-	defer inputFile.Close()
 
-	_, err = io.Copy(inputFile, resp.Body)
+	written, err := io.Copy(inputFile, resp.Body)
+	inputFile.Close() // 立即关闭文件，确保写入完成
+	
 	if err != nil {
+		os.Remove(inputVideoPath) // 失败时清理文件
 		return "", fmt.Errorf("保存视频文件失败: %v", err)
 	}
 
-	// 构建 FFmpeg 命令，将水印图片叠加到视频右下角
-	// ffmpeg -i input.mp4 -i watermark.png -filter_complex "overlay=W-w-10:H-h-10" output.mp4
-	cmd := exec.Command("ffmpeg",
-		"-i", inputVideoPath,
-		"-i", constant.WATERMARK_IMAGE_PATH,
-		"-filter_complex", "overlay=W-w-10:H-h-10",
-		"-y", // 覆盖输出文件
-		outputVideoPath)
-
-	// 执行命令
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		global.Errlog.Error("FFmpeg执行失败", "error", err, "output", string(output))
-		return "", fmt.Errorf("视频水印处理失败: %v", err)
+	// 验证文件完整性
+	if written == 0 {
+		os.Remove(inputVideoPath)
+		return "", fmt.Errorf("下载的视频文件为空")
 	}
+	
+	global.Requestlog.Info("视频下载完成", "url", inputVideoURL, "size", written, "path", inputVideoPath)
 
-	global.Requestlog.Info("视频水印处理成功", "input", inputVideoURL, "output", outputVideoPath)
+	// 智能查找并使用FFmpeg进行水印处理
+	ffmpegPath := findAvailableFFmpeg()
+	if ffmpegPath == "" {
+		global.Requestlog.Warn("FFmpeg不可用，跳过水印处理", "input", inputVideoURL)
+		
+		// FFmpeg不可用时，复制原文件作为输出（优雅降级）
+		if err := copyVideoFile(inputVideoPath, outputVideoPath); err != nil {
+			global.Errlog.Error("复制视频文件失败", "error", err)
+			return "", fmt.Errorf("视频处理失败: %v", err)
+		}
+		
+		global.Requestlog.Info("视频处理完成（未添加水印）", "input", inputVideoURL, "output", outputVideoPath)
+	} else {
+		// 检查水印图片是否可用于FFmpeg处理
+		if _, err := os.Stat(constant.WATERMARK_IMAGE_PATH); os.IsNotExist(err) {
+			global.Requestlog.Warn("水印图片不存在，复制原视频", "path", constant.WATERMARK_IMAGE_PATH)
+			if err := copyVideoFile(inputVideoPath, outputVideoPath); err != nil {
+				return "", fmt.Errorf("复制视频文件失败: %v", err)
+			}
+		} else {
+			// 构建 FFmpeg 命令，将水印图片叠加到视频右下角
+			global.Requestlog.Info("使用FFmpeg添加水印", "ffmpeg", ffmpegPath, "watermark", constant.WATERMARK_IMAGE_PATH, "input", inputVideoURL)
+			
+			cmd := exec.Command(ffmpegPath,
+				"-i", inputVideoPath,
+				"-i", constant.WATERMARK_IMAGE_PATH,
+				"-filter_complex", "overlay=W-w-10:H-h-10",
+				"-c:a", "copy", // 保持音频不重编码，提高性能
+				"-y", // 覆盖输出文件
+				outputVideoPath)
+
+			// 执行命令
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				global.Errlog.Error("FFmpeg执行失败，使用备选方案", "error", err, "output", string(output))
+				
+				// FFmpeg失败时，复制原文件作为备选方案
+				if copyErr := copyVideoFile(inputVideoPath, outputVideoPath); copyErr != nil {
+					global.Errlog.Error("备选方案也失败", "copyError", copyErr, "ffmpegError", err)
+					return "", fmt.Errorf("视频处理失败: FFmpeg错误=%v, 复制错误=%v", err, copyErr)
+				}
+				
+				global.Requestlog.Warn("FFmpeg失败，使用原视频（未添加水印）", "input", inputVideoURL)
+			} else {
+				global.Requestlog.Info("视频水印处理成功", "input", inputVideoURL, "output", outputVideoPath)
+			}
+		}
+	}
 
 	// 创建OSS服务实例上传处理后的视频
 	ossConfig := &OSSConfig{
@@ -721,8 +808,8 @@ func addWatermarkToVideo(inputVideoURL string) (string, error) {
 	}
 	defer outputFile.Close()
 
-	// 生成视频文件名
-	videoFilename := fmt.Sprintf("ai_videos/watermarked_%d.mp4", timestamp)
+	// 生成视频文件名（统一使用uploads路径）
+	videoFilename := fmt.Sprintf("uploads/videos/watermarked_%d.mp4", timestamp)
 
 	// 上传到OSS
 	uploadResult, err := ossService.UploadFile(outputFile, videoFilename, "video/mp4")
@@ -733,11 +820,11 @@ func addWatermarkToVideo(inputVideoURL string) (string, error) {
 		return "", fmt.Errorf("上传视频到OSS失败: %v", err)
 	}
 
-	// 清理临时文件
+	// OSS上传成功后，清理所有临时文件防止占用空间
 	os.Remove(inputVideoPath)
 	os.Remove(outputVideoPath)
 
-	global.Requestlog.Info("视频水印处理并上传OSS成功", "input", inputVideoURL, "ossURL", uploadResult.URL)
+	global.Requestlog.Info("视频水印处理并上传OSS成功", "input", inputVideoURL, "ossURL", uploadResult.URL, "localCleaned", true)
 
 	return uploadResult.URL, nil
 }
@@ -926,13 +1013,23 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 		return nil, fmt.Errorf("任务完成但结果为空")
 
 	case "SUCCEEDED":
-		// 检查是否正在处理水印（status=3）
+		// 检查数据库状态，完全照搬PHP逻辑
 		model, err := GetAIWorkByTaskID(taskID, userID)
-		if err == nil && model.Status == constant.AiWorkStatusWatermark {
-			return nil, fmt.Errorf("水印正在生成中")
+		if err == nil {
+			if model.Status == constant.AiWorkStatusWatermark {
+				return nil, fmt.Errorf("水印正在生成中")
+			}
+			// 如果已经完成，直接返回结果
+			if model.Status == constant.AiWorkStatusCompleted && len(model.Work) > 0 {
+				var workData []string
+				if err := json.Unmarshal(model.Work, &workData); err == nil && len(workData) > 0 {
+					response.Video = workData
+					return response, nil
+				}
+			}
 		}
 
-		// 视频生成成功，需要进行水印处理
+		// 视频生成成功，获取视频URL
 		var videoURL string
 		if url, ok := output["video_url"].(string); ok && url != "" {
 			videoURL = url
@@ -946,24 +1043,24 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 			return nil, fmt.Errorf("数据错误，请联系管理员")
 		}
 
-		// 更新状态为水印处理中（status=3）
+		// 设置状态为3
 		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusWatermark, nil)
 		if err != nil {
 			global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 		}
 
-		// 为视频添加水印并上传到OSS
-		watermarkedVideoURL, err := addWatermarkToVideo(videoURL)
+		// 同步执行水印处理
+		watermarkedVideoURL, err := AddWatermarkToVideo(videoURL)
 		if err != nil {
 			global.Errlog.Error("视频水印处理失败", "taskID", taskID, "url", videoURL, "error", err)
-			// 水印处理失败，恢复为已完成状态
+			// 失败设置状态为2
 			UpdateAIWorkStatus(taskID, constant.AiWorkStatusFailed, map[string]interface{}{
 				"error": err.Error(),
 			})
 			return nil, fmt.Errorf("水印添加失败: %v", err)
 		}
 
-		// 保存处理结果到数据库（直接存储URL数组，匹配PHP版本格式）
+		// 成功设置状态为1并返回结果
 		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, []string{watermarkedVideoURL})
 		if err != nil {
 			global.Errlog.Error("更新工作结果失败", "taskID", taskID, "error", err)

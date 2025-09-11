@@ -55,5 +55,5 @@ const (
 // 视频水印配置
 const (
 	WATERMARK_IMAGE_PATH = "public/static/ai_chat/222.png" // 水印图片路径
-	TEMP_VIDEO_DIR       = "temp/videos"                   // 临时视频目录
+	TEMP_VIDEO_DIR       = "public/uploads/videos"         // 视频下载目录（统一到public/uploads）
 )

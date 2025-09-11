@@ -117,7 +117,7 @@ func (c *AiController) GetImage(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取图片结果
-	result, err := common.GetImageResult(req.ChatId, req.UserID)
+	result, err := common.GetImageResult(req.TaskId, req.UserID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取图片结果失败")
 		return
@@ -199,7 +199,7 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 	}
 
 	// 调用Service层获取视频结果
-	result, err := common.GetVideoResult(req.ChatId, req.UserID)
+	result, err := common.GetVideoResult(req.TaskId, req.UserID)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取视频结果失败")
 		return
