@@ -10,12 +10,12 @@ package common
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"go-web-template/global"
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
+	"go-web-template/utils"
 	"io"
 	"net"
 	"net/http"
@@ -479,7 +479,7 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 		
 		if isLocal {
 			global.Requestlog.Info("开始转换本地图片为base64", "url", imgURL)
-			base64Data, err := convertImageURLToBase64(imgURL)
+			base64Data, err := utils.ImageURLToBase64(imgURL)
 			if err != nil {
 				global.Requestlog.Error("图片转换失败", "url", imgURL, "error", err)
 				return nil, fmt.Errorf("图片转换失败: %v", err)
@@ -1630,50 +1630,3 @@ func isLocalOrPrivateURL(imgURL string) bool {
 	return false
 }
 
-// convertImageURLToBase64 将本地图片URL转换为base64格式供阿里云API使用 - 匹配PHP版本逻辑
-func convertImageURLToBase64(imageURL string) (string, error) {
-	// 创建HTTP客户端，设置30秒超时
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	resp, err := client.Get(imageURL)
-	if err != nil {
-		return "", fmt.Errorf("获取图片失败: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("获取图片失败，状态码: %d", resp.StatusCode)
-	}
-
-	// 获取图片二进制数据
-	imageContent, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("读取图片数据失败: %v", err)
-	}
-
-	// 获取Content-Type来确定MIME类型
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		// 如果没有Content-Type，根据URL扩展名判断
-		parsedURL, _ := url.Parse(imageURL)
-		ext := strings.ToLower(filepath.Ext(parsedURL.Path))
-		switch ext {
-		case ".jpg", ".jpeg":
-			contentType = "image/jpeg"
-		case ".png":
-			contentType = "image/png"
-		case ".gif":
-			contentType = "image/gif"
-		case ".webp":
-			contentType = "image/webp"
-		default:
-			contentType = "image/jpeg" // 默认为jpeg
-		}
-	}
-
-	// 转换为base64格式
-	base64Data := base64.StdEncoding.EncodeToString(imageContent)
-
-	// 返回符合阿里云API要求的格式：data:{MIME_type};base64,{base64_data}
-	return fmt.Sprintf("data:%s;base64,%s", contentType, base64Data), nil
-}
