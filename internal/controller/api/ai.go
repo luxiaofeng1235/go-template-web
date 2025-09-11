@@ -156,7 +156,7 @@ func (c *AiController) ToVideo(r *ghttp.Request) {
 	}
 
 	// 调用视频生成服务 - 统一在service层处理复杂逻辑
-	result, err := common.GenerateVideoByTypeWithUser(req.To, req.Prompt, req.ImgURL, fmt.Sprintf("%d", req.UserID))
+	result, err := common.GenerateVideoByTypeWithUser(req.To, req.Prompt, req.ImgURL, req.UserID)
 	if err != nil {
 		global.Errlog.Error(r.Context(), "视频生成失败: %v", err)
 		utils.FailEncrypt(r, err, "视频生成失败")

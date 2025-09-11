@@ -17,6 +17,18 @@ import (
 
 func main() {
 
+	url := "http://192.168.0.53:8006/uploads/file/20250908/68be7a5870c62_1757313624.jpg"
+	base64Str, err := utils.ImageURLToBase64(url)
+	if err != nil {
+		fmt.Printf("转换失败: %v\n", err)
+		return
+	}
+
+	// 打印完整的 Base64 数据 URL（可用于 HTML 的 src）
+	fmt.Println("Base64 Data URL:")
+	fmt.Println(base64Str[:100] + "...") // 只打印前100字符避免输出过长
+	return
+
 	a := utils.GetDatetime()
 	fmt.Printf("a value is : %v\n", a)
 	t := time.Now() // 假设 t = 2025-08-28 17:13:47 +0800 CST

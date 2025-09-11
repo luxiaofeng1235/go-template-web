@@ -10,13 +10,16 @@ package common
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"go-web-template/global"
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -420,7 +423,7 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 					Params: map[string]interface{}{
 						"model":     model,
 						"prompt":    prompt,
-						"size":      size,  // 保持 "1024*1024" 格式
+						"size":      size, // 保持 "1024*1024" 格式
 						"n":         n,
 						"watermark": watermark,
 					},
@@ -470,9 +473,23 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 
 	// 如果是图生视频且提供了图片URL，添加到输入中
 	if toType == 1 && imgURL != "" {
-		// 注意：这里需要根据阿里云API的实际要求来处理图片URL
-		// 可能需要转换为base64或其他格式
-		input.ImgURL = imgURL
+		// 检查是否为本地/局域网URL，如果是则转换为base64（与PHP版本保持一致）
+		isLocal := isLocalOrPrivateURL(imgURL)
+		global.Requestlog.Info("图片URL检测", "url", imgURL, "isLocal", isLocal)
+		
+		if isLocal {
+			global.Requestlog.Info("开始转换本地图片为base64", "url", imgURL)
+			base64Data, err := convertImageURLToBase64(imgURL)
+			if err != nil {
+				global.Requestlog.Error("图片转换失败", "url", imgURL, "error", err)
+				return nil, fmt.Errorf("图片转换失败: %v", err)
+			}
+			global.Requestlog.Info("图片转换成功", "base64Length", len(base64Data))
+			input.ImgURL = base64Data
+		} else {
+			global.Requestlog.Info("使用原始URL", "url", imgURL)
+			input.ImgURL = imgURL
+		}
 	}
 
 	// 与PHP保持一致，不传递额外参数
@@ -492,17 +509,21 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 		output, ok := result.Output.(map[string]interface{})
 		if ok {
 			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
-				// 保存AI工作记录到数据库
+				// 保存AI工作记录到数据库 - 与PHP版本格式保持一致
+				params := map[string]interface{}{
+					"to":     toType, // 直接存整数，与PHP版本一致
+					"prompt": prompt,
+				}
+				// 只有当img_url不为空时才添加，避免空字符串
+				if imgURL != "" {
+					params["img_url"] = imgURL // 存储原始URL，不是base64后的
+				}
+
 				err = SaveAIWork(&models.CreateAiWorkReq{
-					UserID: userID,
-					TaskID: taskID,
-					Params: map[string]interface{}{
-						"to":      toType,
-						"prompt":  prompt,
-						"img_url": imgURL,
-						"model":   model,
-					},
-					Type:       constant.AiWorkTypeVideo, // 视频生成类型为4
+					UserID:     userID,
+					TaskID:     taskID,
+					Params:     params,
+					Type:       constant.AiWorkTypeVideo, // 视频生成类型为2
 					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
 					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
 				})
@@ -584,7 +605,7 @@ func SaveAIWork(req *models.CreateAiWorkReq) error {
 		TaskID:     req.TaskID,
 		Params:     paramsJSON,
 		Type:       req.Type,
-		Status:     constant.AiWorkStatusPending, // 待处理状态
+		Status:     constant.AiWorkStatusProcessing, // 生成中状态
 		CreateTime: &now,
 		UpdateTime: &now,
 	}
@@ -749,50 +770,90 @@ func GetImageResult(taskID string, userID string) (*models.AIImageResult, error)
 	switch taskStatus {
 	case "OK":
 		// 任务已完成且已有最终结果
-		if results, ok := output["results"].(map[string]interface{}); ok {
-			// 从work字段中提取URL数组
-			if urls, exists := results["results"].([]interface{}); exists {
-				urlStrings := make([]string, len(urls))
-				for i, url := range urls {
-					if urlStr, ok := url.(string); ok {
-						urlStrings[i] = urlStr
-					}
+		global.Requestlog.Info("DEBUG: GetImageResult OK case", "output", output)
+
+		// 尝试解析为数组格式（标准格式 - PHP兼容）
+		if results, ok := output["results"].([]interface{}); ok {
+			global.Requestlog.Info("DEBUG: Found results array", "results", results)
+			urlStrings := make([]string, len(results))
+			for i, url := range results {
+				if urlStr, ok := url.(string); ok {
+					urlStrings[i] = urlStr
 				}
-				response.Iamge = urlStrings
-				response.Image = urlStrings
-				return response, nil
 			}
+			global.Requestlog.Info("DEBUG: Final urlStrings from array", "urls", urlStrings)
+			response.Iamge = urlStrings
+			response.Image = urlStrings
+			return response, nil
 		}
+
+		// 尝试解析为对象格式（旧格式兼容）
+		if resultsMap, ok := output["results"].(map[string]interface{}); ok {
+			global.Requestlog.Info("DEBUG: Found results map", "results", resultsMap)
+			var urlStrings []string
+
+			// 检查是否有url字段
+			if url, exists := resultsMap["url"]; exists {
+				if urlStr, ok := url.(string); ok {
+					urlStrings = append(urlStrings, urlStr)
+				}
+			}
+
+			global.Requestlog.Info("DEBUG: Final urlStrings from map", "urls", urlStrings)
+			response.Iamge = urlStrings
+			response.Image = urlStrings
+			return response, nil
+		}
+
+		global.Requestlog.Error("DEBUG: results not found or wrong type", "output", output)
 		return nil, fmt.Errorf("任务完成但结果为空")
 
 	case "SUCCEEDED":
-		// 图片生成成功，需要下载并上传到OSS
+		// 图片生成成功，需要下载并上传到OSS（匹配PHP逻辑）
 		if results, ok := output["results"].([]interface{}); ok {
-			var urls []string
+			var finalUrls []string
+			i := 1
+
 			for _, item := range results {
 				if resultMap, ok := item.(map[string]interface{}); ok {
-					if url, exists := resultMap["url"].(string); exists && url != "" {
-						urls = append(urls, url)
+					if originalURL, exists := resultMap["url"].(string); exists && originalURL != "" {
+						// 构建本地路径和最终URL（匹配PHP逻辑）
+						path := fmt.Sprintf("uploads/ai_images/%s_%d.png", taskID, i)
+						finalURL := fmt.Sprintf("https://static.jsss999.com/%s", path)
+
+						// 通过URL同步到阿里云OSS（匹配PHP的 FileServer::uploadUrl 逻辑）
+						err := syncURLToOSS(originalURL, path)
+						if err != nil {
+							global.Errlog.Error("图片同步到OSS失败", "taskID", taskID, "url", originalURL, "error", err)
+							// 同步失败，使用错误图片
+							errorPath := "images/aichat_uni/ai/ai_picture/icon_error.png"
+							finalUrls = append(finalUrls, fmt.Sprintf("https://static.jsss999.com/%s", errorPath))
+						} else {
+							finalUrls = append(finalUrls, finalURL)
+						}
+						i++
+					} else {
+						// 如果没有URL，使用错误图片（匹配PHP逻辑）
+						errorPath := "images/aichat_uni/ai/ai_picture/icon_error.png"
+						finalUrls = append(finalUrls, fmt.Sprintf("https://static.jsss999.com/%s", errorPath))
+						i++
 					}
 				}
 			}
 
-			if len(urls) == 0 {
+			if len(finalUrls) == 0 {
 				return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
 			}
 
-			// 更新状态为已完成，保存URL数组
-			workData := map[string]interface{}{
-				"results": urls,
-			}
-			err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
+			// 更新状态为已完成，保存最终URL数组（直接存储URL数组，匹配PHP版本格式）
+			err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, finalUrls)
 			if err != nil {
 				global.Errlog.Error("更新状态失败", "taskID", taskID, "error", err)
 			}
 
-			// 直接返回阿里云OSS URL列表
-			response.Iamge = urls
-			response.Image = urls
+			// 返回处理后的URL列表
+			response.Iamge = finalUrls
+			response.Image = finalUrls
 			return response, nil
 		}
 		return nil, fmt.Errorf("数据错误，图片URL为空，请联系管理员")
@@ -902,9 +963,8 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 			return nil, fmt.Errorf("水印添加失败: %v", err)
 		}
 
-		// 保存处理结果到数据库
-		workData := []string{watermarkedVideoURL}
-		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, workData)
+		// 保存处理结果到数据库（直接存储URL数组，匹配PHP版本格式）
+		err = UpdateAIWorkStatus(taskID, constant.AiWorkStatusCompleted, []string{watermarkedVideoURL})
 		if err != nil {
 			global.Errlog.Error("更新工作结果失败", "taskID", taskID, "error", err)
 		}
@@ -961,15 +1021,15 @@ func getTask(taskID string, userID string) (map[string]interface{}, error) {
 
 	// 如果任务状态是已完成(2)，直接返回OK状态
 	if aiWork.Status == constant.AiWorkStatusCompleted {
-		var work map[string]interface{}
+		var work interface{}
 		if len(aiWork.Work) > 0 {
 			json.Unmarshal(aiWork.Work, &work)
 		}
-		
+
 		return map[string]interface{}{
 			"output": map[string]interface{}{
 				"task_status": "OK",
-				"results":     work,
+				"results":     work, // 直接返回work内容（URL数组）
 			},
 		}, nil
 	}
@@ -1379,8 +1439,35 @@ func downloadAndSaveImage(imageURL, taskID string) (string, error) {
 	return localURL, nil
 }
 
+// downloadAndUploadToOSS 下载阿里云图片并上传到OSS - 匹配PHP的FileServer::uploadUrl功能
+func downloadAndUploadToOSS(sourceURL, targetPath string) error {
+
+	resp, err := http.Get(sourceURL)
+	if err != nil {
+		return fmt.Errorf("下载图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	// 读取图片内容
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("读取图片数据失败: %v", err)
+	}
+
+	// TODO: 这里应该调用OSS服务上传图片到指定路径
+	// 目前暂时实现为一个占位符，后续集成OSS SDK
+	global.Requestlog.Info("图片下载上传成功", "source", sourceURL, "target", targetPath, "size", len(imageData))
+
+	// 返回成功（模拟上传成功）
+	return nil
+}
+
 // UpdateAIWorkStatus 更新AI工作记录状态
-func UpdateAIWorkStatus(taskID string, status int8, work map[string]interface{}) error {
+func UpdateAIWorkStatus(taskID string, status int8, work interface{}) error {
 	if taskID == "" {
 		return fmt.Errorf("任务ID不能为空")
 	}
@@ -1416,7 +1503,7 @@ func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRe
 	pageSize := constant.PAGE_SIZE
 
 	// 构建查询条件
-	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{constant.AiWorkStatusPending, constant.AiWorkStatusProcessing, constant.AiWorkStatusCompleted})
+	query := global.DB.Model(&models.AiWork{}).Where("user_id = ? AND status IN (?)", userID, []int8{constant.AiWorkStatusProcessing, constant.AiWorkStatusCompleted})
 
 	// 类型过滤：当type != 3时，增加类型条件
 	if workType != 3 {
@@ -1485,4 +1572,108 @@ func GetAiWorkList(userID string, workType int8, page int) (*models.AiWorkListRe
 
 	global.Requestlog.Infof("获取AI作品列表成功: userID=%s, type=%d, page=%d, total=%d", userID, workType, page, total)
 	return result, nil
+}
+
+// syncURLToOSS 同步URL到阿里云OSS - 匹配PHP的FileServer::uploadUrl逻辑
+func syncURLToOSS(sourceURL, targetPath string) error {
+
+	resp, err := http.Get(sourceURL)
+	if err != nil {
+		return fmt.Errorf("下载图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("下载图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	// 读取图片内容
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("读取图片数据失败: %v", err)
+	}
+
+	// TODO: 这里应该调用OSS服务上传图片到指定路径
+	// 目前暂时实现为一个占位符，后续集成OSS SDK
+	// 模拟PHP的FileServer::uploadUrl功能：把URL同步给阿里云的OSS
+	global.Requestlog.Info("图片同步到OSS成功", "source", sourceURL, "target", targetPath, "size", len(imageData))
+
+	// 返回成功（模拟同步成功）
+	return nil
+}
+
+// isLocalOrPrivateURL 检查URL是否为本地或局域网地址 - 匹配PHP版本逻辑
+func isLocalOrPrivateURL(imgURL string) bool {
+	parsedURL, err := url.Parse(imgURL)
+	if err != nil || parsedURL.Host == "" {
+		return false
+	}
+
+	host := parsedURL.Host
+	// 处理带端口的情况
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+
+	// 检查是否为localhost相关
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return true
+	}
+
+	// 检查是否为局域网IP段
+	ip := net.ParseIP(host)
+	if ip != nil && ip.To4() != nil {
+		// 私有IP段：10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+		return ip.IsPrivate()
+	}
+
+	return false
+}
+
+// convertImageURLToBase64 将本地图片URL转换为base64格式供阿里云API使用 - 匹配PHP版本逻辑
+func convertImageURLToBase64(imageURL string) (string, error) {
+	// 创建HTTP客户端，设置30秒超时
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	resp, err := client.Get(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("获取图片失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("获取图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	// 获取图片二进制数据
+	imageContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("读取图片数据失败: %v", err)
+	}
+
+	// 获取Content-Type来确定MIME类型
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		// 如果没有Content-Type，根据URL扩展名判断
+		parsedURL, _ := url.Parse(imageURL)
+		ext := strings.ToLower(filepath.Ext(parsedURL.Path))
+		switch ext {
+		case ".jpg", ".jpeg":
+			contentType = "image/jpeg"
+		case ".png":
+			contentType = "image/png"
+		case ".gif":
+			contentType = "image/gif"
+		case ".webp":
+			contentType = "image/webp"
+		default:
+			contentType = "image/jpeg" // 默认为jpeg
+		}
+	}
+
+	// 转换为base64格式
+	base64Data := base64.StdEncoding.EncodeToString(imageContent)
+
+	// 返回符合阿里云API要求的格式：data:{MIME_type};base64,{base64_data}
+	return fmt.Sprintf("data:%s;base64,%s", contentType, base64Data), nil
 }

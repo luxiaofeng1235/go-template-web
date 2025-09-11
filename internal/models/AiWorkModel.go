@@ -97,9 +97,9 @@ type ToImageReq struct {
 
 // ToVideoReq 生成视频请求参数
 type ToVideoReq struct {
-	UserID int    `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
+	UserID string `json:"user_id" form:"user_id" v:"required#用户ID必须输入"`
 	To     int    `json:"to" form:"to" v:"required|in:1,2#视频类型必须选择|视频类型参数错误：1图生视频，2文生视频"`
-	Prompt string `json:"prompt" form:"prompt" v:"max-length:500#提示词长度不能超过500字符"`
+	Prompt string `json:"prompt" form:"prompt" v:"required|max-length:500#提示词必须输入|提示词长度不能超过500字符"`
 	ImgURL string `json:"img_url" form:"img_url"`
 }
 

@@ -25,12 +25,12 @@ const (
 	AiWorkTypeVideo int8 = 2 // 视频生成
 )
 
-// AI工作状态常量
+// AI工作状态常量 - 与PHP版本完全一致
 const (
-	AiWorkStatusPending    int8 = 0 // 待处理
-	AiWorkStatusProcessing int8 = 1 // 处理中
-	AiWorkStatusCompleted  int8 = 2 // 已完成
-	AiWorkStatusFailed     int8 = 3 // 失败
+	AiWorkStatusProcessing int8 = 0 // 生成中
+	AiWorkStatusCompleted  int8 = 1 // 已生成
+	AiWorkStatusFailed     int8 = 2 // 生成失败
+	AiWorkStatusDeleted    int8 = 3 // 已删除
 )
 
 // AI模型类型常量
