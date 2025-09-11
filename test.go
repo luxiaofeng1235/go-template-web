@@ -10,15 +10,31 @@ package main
 
 import (
 	"fmt"
+	"go-web-template/internal/service/common"
 	"go-web-template/utils"
 	"reflect"
 	"time"
 )
 
 func main() {
+	// 测试isLocalOrPrivateURL函数
+	testURLs := []string{
+		"http://192.168.0.53:8006/uploads/file/20250908/68be7a5870c62_1757313624.jpg",
+	}
 
-	url := "http://192.168.0.53:8006/uploads/file/20250908/68be7a5870c62_1757313624.jpg"
-	base64Str, err := utils.ImageURLToBase64(url)
+	fmt.Println("测试 isLocalOrPrivateURL 函数:")
+	fmt.Println("========================================")
+
+	for _, testURL := range testURLs {
+		result := common.IsLocalOrPrivateURL(testURL)
+		fmt.Printf("URL: %s\n", testURL)
+		fmt.Printf("是否为本地/私有地址: %v\n", result)
+		fmt.Println("----------------------------------------")
+	}
+
+	return
+
+	base64Str, err := utils.ImageURLToBase64("http://192.168.0.53:8006/uploads/file/20250908/68be7a5870c62_1757313624.jpg")
 	if err != nil {
 		fmt.Printf("转换失败: %v\n", err)
 		return

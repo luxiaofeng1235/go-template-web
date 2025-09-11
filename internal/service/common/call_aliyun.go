@@ -474,7 +474,7 @@ func GenerateVideoByTypeWithUser(toType int, prompt string, imgURL string, userI
 	// 如果是图生视频且提供了图片URL，添加到输入中
 	if toType == 1 && imgURL != "" {
 		// 检查是否为本地/局域网URL，如果是则转换为base64（与PHP版本保持一致）
-		isLocal := isLocalOrPrivateURL(imgURL)
+		isLocal := IsLocalOrPrivateURL(imgURL)
 		global.Requestlog.Info("图片URL检测", "url", imgURL, "isLocal", isLocal)
 		
 		if isLocal {
@@ -1602,8 +1602,8 @@ func syncURLToOSS(sourceURL, targetPath string) error {
 	return nil
 }
 
-// isLocalOrPrivateURL 检查URL是否为本地或局域网地址 - 匹配PHP版本逻辑
-func isLocalOrPrivateURL(imgURL string) bool {
+// IsLocalOrPrivateURL 检查URL是否为本地或局域网地址 - 匹配PHP版本逻辑
+func IsLocalOrPrivateURL(imgURL string) bool {
 	parsedURL, err := url.Parse(imgURL)
 	if err != nil || parsedURL.Host == "" {
 		return false
