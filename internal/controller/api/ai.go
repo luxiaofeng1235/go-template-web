@@ -67,18 +67,14 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 		return
 	}
 
-	// 构建图片尺寸字符串
+	// 构建图片尺寸字符串（用于阿里云API）
 	imageSize := fmt.Sprintf("%d*%d", width, height)
+	
+	// 构建尺寸数组（用于数据库存储）
+	sizeArray := []string{fmt.Sprintf("%d", width), fmt.Sprintf("%d", height)}
 
-	// 设置默认水印（如果没有提供）
-	watermark := ""
-	if req.Watermark == 1 {
-		watermark = "default_watermark_url" // 如果选择添加水印，使用默认水印
-	}
-	// 其他情况（0, 2 或不传）都默认不添加水印
-
-	// 调用图片生成服务 - 统一在service层处理复杂逻辑
-	result, err := common.GenerateImageByModelWithUser(req.Model, req.Prompt, imageSize, req.N, watermark, fmt.Sprintf("%d", req.UserID))
+	// 调用图片生成服务 - 传递数组格式的size用于数据库存储，使用原始watermark值
+	result, err := common.GenerateImageByModelWithUserAndSize(req.Model, req.Prompt, imageSize, sizeArray, req.N, req.Watermark, fmt.Sprintf("%d", req.UserID))
 	if err != nil {
 		global.Errlog.Error(r.Context(), "图片生成失败: %v", err)
 		utils.FailEncrypt(r, err, "图片生成失败")

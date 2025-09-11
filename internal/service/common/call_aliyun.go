@@ -304,7 +304,68 @@ func GenerateImageByModel(modelType int, prompt string, size string, n int, wate
 	return GenerateImageByModelWithUser(modelType, prompt, size, n, watermark, "0")
 }
 
-// GenerateImageByModelWithUser 根据模型生成图片的统一入口方法（包含用户ID）
+// GenerateImageByModelWithUserAndSize 根据模型生成图片的统一入口方法（包含用户ID和数组格式尺寸）
+func GenerateImageByModelWithUserAndSize(modelType int, prompt string, apiSize string, dbSize []string, n int, watermark string, userID string, originalWatermark int) (*AliyunAIResponse, error) {
+	// 创建AI服务实例
+	aiService := NewAliyunAIService()
+	if aiService == nil {
+		return nil, fmt.Errorf("AI服务初始化失败")
+	}
+
+	// 根据模型类型选择正确的模型
+	var model string
+	switch modelType {
+	case 1:
+		model = constant.IMAGE_MODEL_TURBO
+	case 2:
+		model = constant.IMAGE_MODEL_PLUS
+	default:
+		model = constant.IMAGE_MODEL_TURBO
+	}
+
+	// 处理watermark参数：字符串 "1" 转为 true，其他为 false
+	watermarkBool := watermark == "1"
+
+	// 构建图片生成参数
+	params := &ImageGenerateParams{
+		Size:      apiSize, // 使用API格式的尺寸
+		N:         n,
+		Format:    constant.IMAGE_FORMAT_URL,
+		Watermark: watermarkBool,
+	}
+
+	// 调用阿里云API生成图片
+	result, err := aiService.GenerateImageWithModel(prompt, model, params)
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查响应中是否包含task_id
+	if result != nil && result.Output != nil {
+		output, ok := result.Output.(map[string]interface{})
+		if ok {
+			if taskID, exists := output["task_id"].(string); exists && taskID != "" {
+				// 保存AI工作记录到数据库 - 直接使用传入的原始参数
+				err = SaveAIWork(&models.CreateAiWorkReq{
+					UserID: userID,
+					TaskID: taskID,
+					Params: originalParams, // 直接使用传入的原始参数，不重新组织
+					Type:       constant.AiWorkTypeImage, // 图片生成类型为1
+					CreateTime: func() *time.Time { t := time.Now(); return &t }(),
+					UpdateTime: func() *time.Time { t := time.Now(); return &t }(),
+				})
+				if err != nil {
+					global.Errlog.Error("保存AI图片生成工作记录失败", "taskID", taskID, "error", err)
+					// 不影响主流程，继续返回结果
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// GenerateImageByModelWithUser 根据模型生成图片的统一入口方法（包含用户ID）- 兼容旧接口
 func GenerateImageByModelWithUser(modelType int, prompt string, size string, n int, watermark string, userID string) (*AliyunAIResponse, error) {
 	// 创建AI服务实例
 	aiService := NewAliyunAIService()
@@ -352,7 +413,7 @@ func GenerateImageByModelWithUser(modelType int, prompt string, size string, n i
 					Params: map[string]interface{}{
 						"model":     model,
 						"prompt":    prompt,
-						"size":      size,
+						"size":      size,  // 保持 "1024*1024" 格式
 						"n":         n,
 						"watermark": watermark,
 					},
