@@ -34,13 +34,12 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 	}
 
 	// 构建查询条件
+	//query := global.DB.Model(&models.Product{})
 	query := global.DB.Model(&models.Product{})
-
 	// 添加分类筛选条件
 	if req.CateID > 0 {
-		query = query.Where("cate_id = ?", req.CateID)
+		query = query.Where("cate_id=?", req.CateID)
 	}
-
 	// 获取总记录数
 	err = query.Count(&total).Error
 	if err != nil {
