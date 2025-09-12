@@ -1241,7 +1241,7 @@ func GetVideoResult(taskID string, userID string) (*models.AIVideoResult, error)
 
 	case "RUNNING", "PENDING", "SUSPENDED":
 		// 视频生成中 - 按照PHP逻辑返回特定格式
-		return nil, fmt.Errorf("视频生成中")
+		return nil, fmt.Errorf("阿里云的视频生成中,请稍候重试")
 
 	case "NULL":
 		// 任务不存在
