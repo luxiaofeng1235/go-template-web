@@ -14,6 +14,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // StartAPIServer 启动API服务器（类似go-novel架构，可灵活配置组件）
@@ -83,7 +84,17 @@ func InitDB() {
 		dsn = "root:root@tcp(127.0.0.1:3306)/template_chat?charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
-	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// 配置GORM选项
+	gormConfig := &gorm.Config{}
+
+	// 调试信息：打印配置值
+	g.Log().Info(ctx, "数据库配置检查", "Debug", cfg.Database.Default.Debug)
+
+	// 强制启用SQL调试模式（临时解决方案）
+	gormConfig.Logger = logger.Default.LogMode(logger.Info) // 使用默认日志记录器，信息级别
+	g.Log().Info(ctx, "GORM SQL调试模式已强制启用，将输出所有SQL查询")
+
+	gormDB, err := gorm.Open(mysql.Open(dsn), gormConfig)
 	if err != nil {
 		g.Log().Fatal(ctx, "GORM数据库连接失败:", err)
 		return
