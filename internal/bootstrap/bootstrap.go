@@ -68,7 +68,6 @@ func InitDB() {
 		g.Log().Warning(ctx, "数据库连接失败")
 		return
 	}
-
 	// 测试连接
 	if err := database.PingMaster(); err != nil {
 		g.Log().Fatal(ctx, "数据库连接测试失败:", err)
