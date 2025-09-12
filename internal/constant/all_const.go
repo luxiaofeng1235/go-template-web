@@ -36,14 +36,8 @@ const (
 
 // 响应消息
 const (
-	MSG_SUCCESS        = "操作成功"
-	MSG_ERROR          = "操作失败"
-	MSG_PARAM_ERROR    = "参数错误"
-	MSG_AUTH_ERROR     = "认证失败"
-	MSG_TOKEN_INVALID  = "Token无效"
-	MSG_USER_NOT_FOUND = "用户不存在"
-	MSG_PASSWORD_ERROR = "密码错误"
-	MSG_USER_EXIST     = "用户已存在"
+	MSG_PARAM_ERROR = "参数错误"
+	MSG_AUTH_ERROR  = "认证失败"
 )
 
 // 分页配置

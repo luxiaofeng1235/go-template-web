@@ -43,6 +43,17 @@ func Success(r *ghttp.Request, data interface{}, msg string) {
 	r.Response.WriteJsonExit(response)
 }
 
+// SuccessWithShow 带show参数的成功响应（用于视频生成中等特殊状态）
+func SuccessWithShow(r *ghttp.Request, data interface{}, msg string) {
+	response := ResponseData{
+		Code: constant.SUCCESS_CODE,
+		Show: 1,
+		Data: data,
+		Msg:  msg,
+	}
+	r.Response.WriteJsonExit(response)
+}
+
 // SuccessEncrypt 加密成功响应（参考go-novel的SuccessEncrypt）
 func SuccessEncrypt(r *ghttp.Request, data interface{}, msg string) {
 	response := ResponseData{

@@ -103,6 +103,46 @@ func (s *OSSService) UploadFile(reader io.Reader, filename string, contentType s
 	}, nil
 }
 
+// UploadFileWithPath 上传文件到OSS的指定路径（用于视频等需要固定路径的场景）
+func (s *OSSService) UploadFileWithPath(reader io.Reader, objectPath string, contentType string) (*OSSUploadResult, error) {
+	// 直接使用指定的路径作为对象键
+	key := objectPath
+
+	// 上传选项
+	options := []oss.Option{
+		oss.ContentType(contentType),
+		oss.ContentDisposition(fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(objectPath))),
+	}
+
+	// 上传文件
+	err := s.bucket.PutObject(key, reader, options...)
+	if err != nil {
+		return nil, fmt.Errorf("上传文件到OSS失败: %v", err)
+	}
+
+	// 获取文件信息
+	props, err := s.bucket.GetObjectDetailedMeta(key)
+	if err != nil {
+		return nil, fmt.Errorf("获取文件信息失败: %v", err)
+	}
+
+	// 构建访问URL
+	url := s.getObjectURL(key)
+
+	// 获取文件大小
+	size := int64(0)
+	if contentLength := props.Get("Content-Length"); contentLength != "" {
+		fmt.Sscanf(contentLength, "%d", &size)
+	}
+
+	return &OSSUploadResult{
+		Key:      key,
+		URL:      url,
+		Size:     size,
+		Filename: filepath.Base(objectPath),
+	}, nil
+}
+
 // UploadFileByURL 通过URL上传文件到OSS
 func (s *OSSService) UploadFileByURL(fileURL string, filename string) (*OSSUploadResult, error) {
 	// 使用HTTP客户端下载文件

@@ -69,7 +69,7 @@ func (c *AiController) ToImage(r *ghttp.Request) {
 
 	// 构建图片尺寸字符串（用于阿里云API）
 	imageSize := fmt.Sprintf("%d*%d", width, height)
-	
+
 	// 构建尺寸数组（用于数据库存储）
 	sizeArray := []string{fmt.Sprintf("%d", width), fmt.Sprintf("%d", height)}
 
@@ -201,7 +201,14 @@ func (c *AiController) GetVideo(r *ghttp.Request) {
 	// 调用Service层获取视频结果
 	result, err := common.GetVideoResult(req.TaskId, req.UserID)
 	if err != nil {
-		utils.FailEncrypt(r, err, "获取视频结果失败")
+		// 按照PHP逻辑，特定错误消息需要特殊处理
+		errorMsg := err.Error()
+		if errorMsg == "视频生成中" || errorMsg == "水印正在生成中" {
+			// 按照PHP逻辑返回特殊格式：code=0, show=1, msg=错误消息
+			utils.SuccessWithShow(r, req.TaskId, errorMsg)
+			return
+		}
+		utils.FailEncrypt(r, err, errorMsg)
 		return
 	}
 
