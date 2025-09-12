@@ -133,8 +133,23 @@ func (s *StreamService) getChatLog(ctx context.Context, chatID int64, userID str
 
 // initializeModel 初始化AI模型配置 - 对应PHP initializeModel()
 func (s *StreamService) initializeModel(model, isDeepReflection int) (*AIModelConfig, error) {
+	// 根据model参数选择对应的AI模型类型，对应PHP的switch逻辑
+	var aiModelType int
+	switch model {
+	case 0:
+		aiModelType = constant.AI_MODEL_ASSISTANT
+	case 1:
+		aiModelType = constant.AI_MODEL_SEARCH // model=1对应搜索模型
+	case 2:
+		aiModelType = constant.AI_MODEL_DOCTOR
+	case 3:
+		aiModelType = constant.AI_MODEL_PET
+	default:
+		aiModelType = constant.AI_MODEL_ASSISTANT
+	}
+
 	// 使用constant中的配置
-	modelConfig := constant.GetAIModelConfig(constant.AI_MODEL_SEARCH, isDeepReflection == 1)
+	modelConfig := constant.GetAIModelConfig(aiModelType, isDeepReflection == 1)
 
 	config := &AIModelConfig{
 		URL:         constant.ALIYUN_CHAT_URL,
@@ -145,7 +160,6 @@ func (s *StreamService) initializeModel(model, isDeepReflection int) (*AIModelCo
 		Stream:      true,
 		Search:      modelConfig.Search,
 		Headers: map[string]string{
-			"Content-Type":  "application/json",
 			"Authorization": "Bearer " + constant.ALIYUN_AI_API_KEY,
 		},
 	}
@@ -184,11 +198,10 @@ func (s *StreamService) prepareMessages(chat *models.AiChatLog, newMessage strin
 // prepareJSONPayload 准备发送给AI服务的JSON载荷
 func (s *StreamService) prepareJSONPayload(messages []AIMessage, config *AIModelConfig) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
-		"model":       config.Model,
-		"messages":    messages,
-		"temperature": config.Temperature,
-		"max_tokens":  config.MaxTokens,
-		"stream":      config.Stream,
+		"model":         config.Model,
+		"messages":      messages,
+		"stream":        config.Stream,
+		"enable_search": config.Search, // 添加搜索功能开关，对应PHP的enable_search
 	}
 
 	return payload, nil
@@ -202,13 +215,17 @@ func (s *StreamService) callAIServiceWithStream(ctx context.Context, r *ghttp.Re
 		return fmt.Errorf("JSON序列化失败: %v", err)
 	}
 
+	// 添加调试日志
+	global.Errlog.Info(ctx, "AI请求详情: URL=%s, Payload=%s", config.URL, string(jsonData))
+
 	// 创建HTTP请求
 	req, err := http.NewRequestWithContext(ctx, "POST", config.URL, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return fmt.Errorf("创建HTTP请求失败: %v", err)
 	}
 
-	// 设置请求头
+	// 设置请求头 
+	req.Header.Set("Content-Type", "application/json") // 手动设置JSON内容类型
 	for key, value := range config.Headers {
 		req.Header.Set(key, value)
 	}
