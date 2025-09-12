@@ -81,8 +81,6 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 		return []models.ProductListItem{}, nil
 	}
 
-	// 获取基础URL用于处理图片地址
-	baseURL := utils.GetFullDomain(r)
 	// 转换为返回格式并处理数据
 	list = make([]models.ProductListItem, 0, len(products))
 
@@ -97,7 +95,7 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 			ProductName: product.ProductName,
 			CateID:      product.CateID,
 			Intro:       product.Intro,
-			Logo:        processLogoURL(product.Logo, baseURL),
+			Logo:        utils.ProcessLogoURLForStatic(product.Logo, r),
 			QRCode:      product.QRCode,
 			CateName:    getCategoryName(product.CateID),
 		}
@@ -141,6 +139,11 @@ func processLogoURL(logo, baseURL string) string {
 	// 其他情况，添加/前缀后拼接
 	return baseURL + "/" + logo
 }
+
+// processLogoURLForStatic 处理Logo URL，使用静态资源服务器地址
+// @param logo string 原始Logo路径
+// @param r *ghttp.Request HTTP请求对象
+// @return string 处理后的完整Logo URL
 
 // getCategoryName 根据分类ID获取分类名称
 // @param cateID int 分类ID
