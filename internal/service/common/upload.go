@@ -130,8 +130,7 @@ func UploadFile(r *ghttp.Request, req *models.UploadFileReq) (*models.UploadFile
 	}
 
 	// 生成访问URL - 使用URL工具函数统一生成静态资源URL
-	fullURL := utils.GetStaticResourceURL(r, relativeURI)
-
+	fullURL := utils.ProcessLogoURLForStatic(relativeURI, r)
 	// 记录上传成功日志
 	global.Requestlog.Info("文件上传成功",
 		"fileID", fileRecord.ID,
