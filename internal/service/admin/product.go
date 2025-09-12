@@ -74,7 +74,7 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 			Intro:       product.Intro,
 			Logo:        utils.ProcessLogoURLForStatic(product.Logo, r),
 			QRCode:      product.QRCode,
-			CateName:    getCategoryName(product.CateID),
+			CateName:    constant.GetProductCategoryName(product.CateID), //获取分类名称
 		}
 		list = append(list, item)
 	}
@@ -87,13 +87,6 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 // @return err error 错误信息
 func GetCategoryList() (categories []constant.ProductCategory, err error) {
 	return constant.ProductCategoryList, nil
-}
-
-// getCategoryName 根据分类ID获取分类名称
-// @param cateID int 分类ID
-// @return string 分类名称
-func getCategoryName(cateID int) string {
-	return constant.GetProductCategoryName(cateID)
 }
 
 // SaveProduct 保存商品信息 - 支持新增和编辑

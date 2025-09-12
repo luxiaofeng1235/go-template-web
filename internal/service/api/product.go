@@ -14,7 +14,6 @@ import (
 	"go-web-template/internal/constant"
 	"go-web-template/internal/models"
 	"go-web-template/utils"
-	"strings"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 )
@@ -31,30 +30,25 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 		global.Errlog.Error("商品列表查询参数无效", "req", req)
 		return
 	}
-
 	// 参数默认值处理
 	if req.PageNo <= 0 {
-		req.PageNo = 1
+		req.PageNo = constant.PAGE_NO
 	}
 	if req.PageSize <= 0 {
-		req.PageSize = 20
+		req.PageSize = constant.PAGE_SIZE
 	}
-
 	global.Requestlog.Info("开始查询商品列表",
 		"pageNo", req.PageNo,
 		"pageSize", req.PageSize,
 		"cateID", req.CateID)
-
 	// 构建查询条件
 	query := global.DB.Model(&models.Product{}).
 		Select("id, product_name, cate_id, intro, logo, qrcode")
-
 	// 添加分类筛选条件（如果提供了cate_id）
 	if req.CateID > 0 {
 		query = query.Where("cate_id = ?", req.CateID)
 		global.Sqllog.Info("添加分类筛选条件", "cateID", req.CateID)
 	}
-
 	// 分页查询
 	offset := (req.PageNo - 1) * req.PageSize
 	var products []models.Product
@@ -87,7 +81,6 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 	for _, product := range products {
 		// 检查商品数据有效性
 		if product.ID <= 0 {
-			global.Errlog.Error("商品数据异常，ID无效", "product", product)
 			continue
 		}
 		item := models.ProductListItem{
@@ -97,7 +90,7 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 			Intro:       product.Intro,
 			Logo:        utils.ProcessLogoURLForStatic(product.Logo, r),
 			QRCode:      product.QRCode,
-			CateName:    getCategoryName(product.CateID),
+			CateName:    constant.GetProductCategoryName(product.CateID),
 		}
 		list = append(list, item)
 	}
@@ -109,57 +102,4 @@ func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models
 		"count", len(list))
 
 	return list, nil
-}
-
-// processLogoURL 处理Logo URL，确保返回完整URL
-// @param logo string 原始Logo路径
-// @param baseURL string 基础域名URL
-// @return string 处理后的完整Logo URL
-func processLogoURL(logo, baseURL string) string {
-	// 参数验证
-	if logo == "" {
-		return ""
-	}
-
-	if baseURL == "" {
-		global.Errlog.Error("基础URL为空，无法处理Logo地址", "logo", logo)
-		return logo
-	}
-
-	// 如果已经是完整URL，直接返回
-	if strings.HasPrefix(logo, "http://") || strings.HasPrefix(logo, "https://") {
-		return logo
-	}
-
-	// 如果是相对路径，拼接域名
-	if strings.HasPrefix(logo, "/") {
-		return baseURL + logo
-	}
-
-	// 其他情况，添加/前缀后拼接
-	return baseURL + "/" + logo
-}
-
-// processLogoURLForStatic 处理Logo URL，使用静态资源服务器地址
-// @param logo string 原始Logo路径
-// @param r *ghttp.Request HTTP请求对象
-// @return string 处理后的完整Logo URL
-
-// getCategoryName 根据分类ID获取分类名称
-// @param cateID int 分类ID
-// @return string 分类名称
-func getCategoryName(cateID int) string {
-	// 参数验证
-	if cateID < 0 {
-		global.Errlog.Error("分类ID无效", "cateID", cateID)
-		return "未知分类"
-	}
-
-	// 使用constant中的函数获取分类名称
-	categoryName := constant.GetProductCategoryName(cateID)
-
-	// 记录调试日志
-	global.Requestlog.Debug("获取分类名称", "cateID", cateID, "categoryName", categoryName)
-
-	return categoryName
 }
