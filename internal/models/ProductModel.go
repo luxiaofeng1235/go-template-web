@@ -16,6 +16,7 @@ type Product struct {
 type ProductListReq struct {
 	PageNo   int `json:"page_no" form:"page_no" v:"required|min:1#页码必须输入|页码必须大于0"`                      // 页码
 	PageSize int `json:"page_size" form:"page_size" v:"required|between:1,100#每页数量必须输入|每页数量必须在1-100之间"` // 每页数量
+	CateID   int `json:"cate_id" form:"cate_id"`
 }
 
 // ProductListItem 商品列表项
