@@ -1847,9 +1847,27 @@ func syncURLToOSS(sourceURL, targetPath string) error {
 		return fmt.Errorf("读取图片数据失败: %v", err)
 	}
 
-	// TODO: 这里应该调用OSS服务上传图片到指定路径
-	// 目前暂时实现为一个占位符，后续集成OSS SDK
-	// 模拟PHP的FileServer::uploadUrl功能：把URL同步给阿里云的OSS
+	// 集成OSS SDK：把图片真正上传到OSS指定路径
+	// 创建OSS服务实例
+	ossConfig := &OSSConfig{
+		Endpoint:        os.Getenv("OSS_ENDPOINT"),
+		AccessKeyID:     os.Getenv("OSS_ACCESS_KEY_ID"),
+		AccessKeySecret: os.Getenv("OSS_ACCESS_KEY_SECRET"),
+		BucketName:      os.Getenv("OSS_BUCKET"),
+		Domain:          os.Getenv("OSS_VIEW_DOMAIN"),
+	}
+
+	ossService, err := NewOSSService(ossConfig)
+	if err != nil {
+		return fmt.Errorf("创建OSS服务失败: %v", err)
+	}
+
+	// 使用UploadFileWithPath上传到指定路径
+	reader := bytes.NewReader(imageData)
+	_, err = ossService.UploadFileWithPath(reader, targetPath, "image/png")
+	if err != nil {
+		return fmt.Errorf("上传图片到OSS失败: %v", err)
+	}
 	global.Requestlog.Info("图片同步到OSS成功", "source", sourceURL, "target", targetPath, "size", len(imageData))
 
 	// 返回成功（模拟同步成功）
