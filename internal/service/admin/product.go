@@ -15,6 +15,8 @@ import (
 	"go-web-template/internal/models"
 	"go-web-template/utils"
 	"strings"
+
+	"github.com/gogf/gf/v2/net/ghttp"
 )
 
 // GetProductList 获取商品列表 - 后台管理专用
@@ -22,7 +24,7 @@ import (
 // @return list []models.ProductListItem 商品列表数据
 // @return total int64 总记录数
 // @return err error 错误信息
-func GetProductList(req *models.ProductListReq) (list []models.ProductListItem, total int64, err error) {
+func GetProductList(r *ghttp.Request, req *models.ProductListReq) (list []models.ProductListItem, total int64, err error) {
 	// 参数默认值处理
 	if req.PageNo <= 0 {
 		req.PageNo = 1
@@ -70,7 +72,7 @@ func GetProductList(req *models.ProductListReq) (list []models.ProductListItem, 
 			ProductName: product.ProductName,
 			CateID:      product.CateID,
 			Intro:       product.Intro,
-			Logo:        processAdminLogoURL(product.Logo),
+			Logo:        utils.ProcessLogoURLForStatic(product.Logo, r),
 			QRCode:      product.QRCode,
 			CateName:    getCategoryName(product.CateID),
 		}
@@ -85,31 +87,6 @@ func GetProductList(req *models.ProductListReq) (list []models.ProductListItem, 
 // @return err error 错误信息
 func GetCategoryList() (categories []constant.ProductCategory, err error) {
 	return constant.ProductCategoryList, nil
-}
-
-// processAdminLogoURL 处理后台管理的Logo URL
-// @param logo string 原始Logo路径
-// @return string 处理后的Logo URL
-func processAdminLogoURL(logo string) string {
-	if logo == "" {
-		return ""
-	}
-
-	// 如果已经是完整URL，直接返回
-	if len(logo) > 7 && (logo[:7] == "http://" || logo[:8] == "https://") {
-		return logo
-	}
-
-	// 后台管理统一使用静态资源服务器地址
-	baseURL := "http://localhost:8082"
-
-	// 如果是相对路径，拼接域名
-	if logo[0] == '/' {
-		return baseURL + logo
-	}
-
-	// 其他情况，添加/前缀后拼接
-	return baseURL + "/" + logo
 }
 
 // getCategoryName 根据分类ID获取分类名称

@@ -29,7 +29,7 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 	}
 
 	// 调用Service层处理业务逻辑
-	list, total, err := admin.GetProductList(&req)
+	list, total, err := admin.GetProductList(r, &req)
 	if err != nil {
 		utils.FailEncrypt(r, err, "获取商品列表失败")
 		return
@@ -37,7 +37,7 @@ func (c *ProductController) GetProductList(r *ghttp.Request) {
 
 	// 计算总页数
 	totalPages := int(math.Ceil(float64(total) / float64(req.PageSize)))
-	
+
 	// 构造响应数据 - 按照PHP版本格式
 	data := map[string]interface{}{
 		"total":       total,
