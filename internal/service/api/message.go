@@ -35,10 +35,10 @@ func GetChatUserList(req *models.ChatUserListReq) (list []models.SecretKey, tota
 
 	// 设置默认分页参数
 	if req.PageNo <= 0 {
-		req.PageNo = 1
+		req.PageNo = constant.PAGE_SIZE
 	}
 	if req.PageSize <= 0 {
-		req.PageSize = 20 // 默认20条
+		req.PageSize = constant.PAGE_SIZE // 默认20条
 	}
 
 	// 构建查询条件 - 查询SecretKey表获取设备列表，选择指定字段
@@ -64,7 +64,6 @@ func GetChatUserList(req *models.ChatUserListReq) (list []models.SecretKey, tota
 	if len(list) <= 0 {
 		return list, total, nil
 	}
-
 	// 如果传了access_key，关联查询用户备注信息
 	if req.AccessKey != "" {
 		for i, secretKey := range list {
